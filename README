@@ -1,0 +1,13 @@
+This package is an implementation of Expect in Go. 
+
+Features:
+ - Spawning and controlling local processes with real PTYs.
+ - Native SSH spawner. 
+ - Expect backed spawner for testing.
+ - Generic spawner to make implementing additonal Spawners simple.
+ - Has a batcher for implementing workflows without having to write extra logic
+   and code.
+
+See the tests for example usage.
+
+Disclaimer: This is not an official Google product.
