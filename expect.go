@@ -18,13 +18,13 @@ import (
 	"syscall"
 	"time"
 
+	log "github.com/golang/glog"
 	stdlog "log"
 
 	"golang.org/x/crypto/ssh"
 	"google.golang.org/grpc/codes"
 
-	log "github.com/golang/glog"
-	term "github.com/google/goterm"
+	"github.com/google/goterm/term"
 )
 
 // DefaultTimeout is the default Expect timeout.
