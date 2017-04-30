@@ -24,7 +24,7 @@ import (
 	"google.golang.org/grpc/codes"
 
 	log "github.com/golang/glog"
-	term "github.com/google/goterm"
+	term "github.com/google/goterm/term"
 
 	"golang.org/x/crypto/ssh"
 )
@@ -353,8 +353,9 @@ func TestBatcher(t *testing.T) {
 		srv.Batcher(tst.srv)
 		clt, err := ssh.Dial("tcp", net.JoinHostPort("localhost", strconv.Itoa(int(port))),
 			&ssh.ClientConfig{
-				User: "test",
-				Auth: []ssh.AuthMethod{ssh.Password("test")},
+				User:            "test",
+				Auth:            []ssh.AuthMethod{ssh.Password("test")},
+				HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 			})
 		if err != nil {
 			t.Errorf("%s: ssh.Dial failed: %v", tst.name, err)
