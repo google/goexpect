@@ -732,8 +732,9 @@ func TestSpawnSSHPTY(t *testing.T) {
 		if !tst.sshNil {
 			clt, err := ssh.Dial("tcp", net.JoinHostPort("localhost", strconv.Itoa(int(port))),
 				&ssh.ClientConfig{
-					User: "test",
-					Auth: []ssh.AuthMethod{ssh.Password("test")},
+					User:            "test",
+					Auth:            []ssh.AuthMethod{ssh.Password("test")},
+					HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 				})
 			if err != nil {
 				t.Errorf("%s: net.Dial(%q) failed: %v", tst.name, net.JoinHostPort("localhost", strconv.Itoa(int(port))), err)
