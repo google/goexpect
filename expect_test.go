@@ -723,7 +723,11 @@ func TestSpawnSSHPTY(t *testing.T) {
 	if err != nil {
 		t.Fatalf("srv.Serve failed: %v", err)
 	}
-	defer srv.Close()
+	defer func() {
+		if err := srv.Close(); err != nil {
+			t.Errorf("srv.Close failed: %v", err)
+		}
+	}()
 
 	for _, tst := range tests {
 		srv.Batcher(tst.srv)
@@ -957,7 +961,10 @@ L1:
 				}
 			}
 		}
-		exp.Close()
+		if err := exp.Close(); err != nil {
+			t.Logf("exp.Close failed: %v", err)
+
+		}
 	}
 }
 
@@ -986,7 +993,7 @@ func TestBatchScenarios(t *testing.T) {
 				batch = append(batch, &BCas{tst.Cases()})
 			}
 		}
-		exp, r, err := Spawn(f, 30*time.Second)
+		exp, r, err := Spawn(f, 30*time.Second, Verbose(true))
 		if err != nil {
 			t.Errorf("%s: Spawn(%q) failed: %v", file, file, err)
 			continue

@@ -18,8 +18,9 @@ import (
 	"syscall"
 	"time"
 
-	log "github.com/golang/glog"
 	stdlog "log"
+
+	log "github.com/golang/glog"
 
 	"golang.org/x/crypto/ssh"
 	"google.golang.org/grpc/codes"
@@ -68,6 +69,15 @@ func CheckDuration(d time.Duration) Option {
 		prev := e.chkDuration
 		e.chkDuration = d
 		return CheckDuration(prev)
+	}
+}
+
+// Verbose enables/disables verbose logging of matches and sends.
+func Verbose(v bool) Option {
+	return func(e *GExpect) Option {
+		prev := e.verbose
+		e.verbose = v
+		return Verbose(prev)
 	}
 }
 
@@ -490,6 +500,8 @@ type GExpect struct {
 	timeout time.Duration
 	// chkDuration contains the duration between checks for new incoming data.
 	chkDuration time.Duration
+	// verbose enables verbose logging.
+	verbose bool
 
 	// mu protects the output buffer. It must be held for any operations on out.
 	mu  sync.Mutex
@@ -622,9 +634,14 @@ func (e *GExpect) ExpectSwitchCase(cs []Caser, timeout time.Duration) (string, [
 			if match == nil {
 				continue
 			}
+
 			t, s := c.Tag()
 			if t == NextTag && !c.Retry() {
 				continue
+			}
+
+			if e.verbose {
+				log.Infof("Match for RE: %q found: %q Buffer: %q", rs[i].String(), match, tbuf.String())
 			}
 
 			// Clear the buffer directly after match.
@@ -1007,6 +1024,9 @@ func (e *GExpect) Send(in string) error {
 		return errors.New("expect: Process not running")
 	}
 	e.snd <- in
+	if e.verbose {
+		log.Infof("Sent: %q", in)
+	}
 	return nil
 }
 
