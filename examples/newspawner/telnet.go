@@ -2,6 +2,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"time"
 
@@ -20,6 +21,8 @@ const (
 )
 
 func main() {
+	flag.Parse()
+
 	fmt.Println(term.Bluef("Telnet spawner example"))
 	exp, _, err := telnetSpawn(address, timeout, expect.Verbose(true))
 	if err != nil {
@@ -34,7 +37,7 @@ func main() {
 
 	res, err := exp.ExpectBatch([]expect.Batcher{
 		&expect.BExp{R: `\n\.`},
-		&expect.BSnd{S: command + "\n"},
+		&expect.BSnd{S: command + "\r\n"},
 		&expect.BExp{R: `\n\.`},
 	}, timeout)
 	if err != nil {
