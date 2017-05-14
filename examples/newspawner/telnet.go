@@ -21,7 +21,7 @@ const (
 
 func main() {
 	fmt.Println(term.Bluef("Telnet spawner example"))
-	exp, _, err := telnetSpawn(address, timeout)
+	exp, _, err := telnetSpawn(address, timeout, expect.Verbose(true))
 	if err != nil {
 		glog.Exitf("telnetSpawn(%q,%v) failed: %v", address, timeout, err)
 	}
@@ -38,13 +38,13 @@ func main() {
 		&expect.BExp{R: `\n\.`},
 	}, timeout)
 	if err != nil {
-		glog.Exit(err)
+		glog.Exitf("exp.ExpectBatch failed: %v , res: %v", err, res)
 	}
 	fmt.Println(term.Greenf("Res: %s", res[len(res)-1].Output))
 
 }
 
-func telnetSpawn(addr string, timeout time.Duration) (expect.Expecter, <-chan error, error) {
+func telnetSpawn(addr string, timeout time.Duration, opts ...expect.Option) (expect.Expecter, <-chan error, error) {
 	conn, err := telnet.Dial(network, addr)
 	if err != nil {
 		return nil, nil, err
@@ -63,5 +63,5 @@ func telnetSpawn(addr string, timeout time.Duration) (expect.Expecter, <-chan er
 			return conn.Close()
 		},
 		Check: func() bool { return true },
-	}, timeout)
+	}, timeout, opts...)
 }
