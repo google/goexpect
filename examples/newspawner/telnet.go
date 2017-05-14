@@ -25,6 +25,13 @@ func main() {
 	if err != nil {
 		glog.Exitf("telnetSpawn(%q,%v) failed: %v", address, timeout, err)
 	}
+
+	defer func() {
+		if err := exp.Close(); err != nil {
+			glog.Infof("exp.Close failed: %v", err)
+		}
+	}()
+
 	res, err := exp.ExpectBatch([]expect.Batcher{
 		&expect.BExp{R: `\n\.`},
 		&expect.BSnd{S: command + "\n"},
