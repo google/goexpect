@@ -1,6 +1,7 @@
 This package is an implementation of [Expect](https://en.wikipedia.org/wiki/Expect) in [Go](golang.org).
 
-Features:
+
+## Features:
  - Spawning and controlling local processes with real PTYs.
  - Native SSH spawner.
  - Expect backed spawner for testing.
@@ -8,6 +9,135 @@ Features:
  - Has a batcher for implementing workflows without having to write extra logic
    and code.
 
-See the tests for example usage.
+## Basic Examples
+
+### The [Wikipedia Expect](https://en.wikipedia.org/wiki/Expect) examples.
+
+#### Telnet
+
+First we try to replicate the Telnet example from wikipedia as close as possible.
+
+*Error checking was omitted to keep the example short*
+
+```
+package main
+
+import (
+	"flag"
+	"fmt"
+	"regexp"
+	"time"
+
+	"github.com/golang/glog"
+	"github.com/google/goexpect"
+	"github.com/google/goterm/term"
+)
+
+const (
+	timeout = 10 * time.Minute
+)
+
+var (
+	addr = flag.String("address", "", "address of telnet server")
+	user = flag.String("user", "", "username to use")
+	pass = flag.String("pass", "", "password to use")
+	cmd  = flag.String("cmd", "", "command to run")
+
+	userRE   = regexp.MustCompile("username:")
+	passRE   = regexp.MustCompile("password:")
+	promptRE = regexp.MustCompile("%")
+)
+
+func main() {
+	flag.Parse()
+	fmt.Println(term.Bluef("Telnet 1 example"))
+
+	e, _, err := expect.Spawn(fmt.Sprintf("telnet %s", *addr), -1)
+	if err != nil {
+		glog.Exit(err)
+	}
+	defer e.Close()
+
+	e.Expect(userRE, timeout)
+	e.Send(*user + "\n")
+	e.Expect(passRE, timeout)
+	e.Send(*pass + "\n")
+	e.Expect(promptRE, timeout)
+	e.Send(*cmd + "\n")
+	result, _, _ := e.Expect(promptRE, timeout)
+	e.Send("exit\n")
+
+	fmt.Println(term.Greenf("%s: result: %s\n", *cmd, result))
+}
+
+```
+
+In essence to run and attach to a process the `expect.Spawn(<cmd>,<timeout>)` is used.
+The spawn returns and Expecter that can rund `e.Expect` and `e.Send` commands to match information
+in the output and Send information in.
+
+*See the https://github.com/google/goexpect/blob/master/examples/newspawner/telnet.go  example for a slightly more fleshed out version*
+
+#### FTP
+
+For the FTP example we use the expect.Batch to describe the interaction.
+
+```
+package main
+
+import (
+	"flag"
+	"fmt"
+	"time"
+
+	"github.com/golang/glog"
+	"github.com/google/goexpect"
+	"github.com/google/goterm/term"
+)
+
+const (
+	timeout = 10 * time.Minute
+)
+
+var (
+	addr = flag.String("address", "", "address of telnet server")
+	user = flag.String("user", "", "username to use")
+	pass = flag.String("pass", "", "password to use")
+)
+
+func main() {
+	flag.Parse()
+	fmt.Println(term.Bluef("Ftp 1 example"))
+
+	e, _, err := expect.Spawn(fmt.Sprintf("ftp %s", *addr), -1)
+	if err != nil {
+		glog.Exit(err)
+	}
+	defer e.Close()
+
+	e.ExpectBatch([]expect.Batcher{
+		&expect.BExp{R: "username:"},
+		&expect.BSnd{S: *user + "\n"},
+		&expect.BExp{R: "password:"},
+		&expect.BSnd{S: *pass + "\n"},
+		&expect.BExp{R: "ftp>"},
+		&expect.BSnd{S: "bin\n"},
+		&expect.BExp{R: "ftp>"},
+		&expect.BSnd{S: "prompt\n"},
+		&expect.BExp{R: "ftp>"},
+		&expect.BSnd{S: "mget *\n"},
+		&expect.BExp{R: "ftp>"},
+		&expect.BSnd{S: "bye\n"},
+	}, timeout)
+
+	fmt.Println(term.Greenf("All done"))
+}
+
+```
+
+Using the expect.Batcher makes the standard Send/Expect interactions more compact and simpler to write.
+
+#### SSH
+
 
 Disclaimer: This is not an official Google product.
