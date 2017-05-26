@@ -17,6 +17,19 @@ This package is an implementation of [Expect](https://en.wikipedia.org/wiki/Expe
 
 First we try to replicate the Telnet example from wikipedia as close as possible.
 
+Interaction:
+
+```diff
++ username:
+- user\n
++ password:
+- pass\n
++ %
+- cmd\n
++ %
+- exit\n
+```
+
 *Error checking was omitted to keep the example short*
 
 ```
@@ -80,7 +93,22 @@ in the output and Send information in.
 
 #### FTP
 
-For the FTP example we use the expect.Batch to describe the interaction.
+For the FTP example we use the expect.Batch for the following interaction.
+
+```diff
++ username:
+- user\n
++ password:
+- pass\n
++ ftp>
+- prompt\n
++ ftp>
+- mget *\n
++ ftp>'
+- bye\n
+```
+
+*ftp_example.go*
 
 ```
 package main
