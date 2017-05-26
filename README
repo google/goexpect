@@ -1,8 +1,8 @@
-This package is an implementation of Expect in Go. 
+This package is an implementation of [Expect](https://en.wikipedia.org/wiki/Expect) in [Go](golang.org).
 
 Features:
  - Spawning and controlling local processes with real PTYs.
- - Native SSH spawner. 
+ - Native SSH spawner.
  - Expect backed spawner for testing.
  - Generic spawner to make implementing additonal Spawners simple.
  - Has a batcher for implementing workflows without having to write extra logic
