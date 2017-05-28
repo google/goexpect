@@ -167,5 +167,21 @@ Using the expect.Batcher makes the standard Send/Expect interactions more compac
 
 #### SSH
 
+With the SSH login example we test out the [expect.Caser](https://github.com/google/goexpect/blob/7f68e6ee0bc89860ff53a5c0d50bcfae61853506/expect.go#L388-L397)
+and the [Case Tags](https://github.com/google/goexpect/blob/7f68e6ee0bc89860ff53a5c0d50bcfae61853506/expect.go#L324-L335).
+
+Interaction:
+
+```diff
++ "Login: "
+- user
++ "Password: "
+- pass1
++ "Wrong password"
++ "Login"
+- user
++ "Password: "
+- pass2
++ router#
 
 Disclaimer: This is not an official Google product.
