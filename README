@@ -170,6 +170,10 @@ Using the expect.Batcher makes the standard Send/Expect interactions more compac
 With the SSH login example we test out the [expect.Caser](https://github.com/google/goexpect/blob/7f68e6ee0bc89860ff53a5c0d50bcfae61853506/expect.go#L388-L397)
 and the [Case Tags](https://github.com/google/goexpect/blob/7f68e6ee0bc89860ff53a5c0d50bcfae61853506/expect.go#L324-L335).
 
+Also for this we'll use the Go Expect native [SSH Spawner](https://github.com/google/goexpect/blob/7f68e6ee0bc89860ff53a5c0d50bcfae61853506/expect.go#L872-L879)
+instead of spawning a process.
+
+
 Interaction:
 
 ```diff
@@ -183,5 +187,8 @@ Interaction:
 + "Password: "
 - pass2
 + router#
+```
+
+*ssh_example.to*
 
 Disclaimer: This is not an official Google product.
