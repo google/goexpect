@@ -191,4 +191,100 @@ Interaction:
 
 *ssh_example.to*
 
-Disclaimer: This is not an official Google product.
+```
+package main
+
+import (
+	"flag"
+	"fmt"
+	"regexp"
+	"time"
+
+	"golang.org/x/crypto/ssh"
+
+	"google.golang.org/grpc/codes"
+
+	"github.com/golang/glog"
+	"github.com/google/goexpect"
+	"github.com/google/goterm/term"
+)
+
+const (
+	timeout = 10 * time.Minute
+)
+
+var (
+	addr  = flag.String("address", "", "address of telnet server")
+	user  = flag.String("user", "user", "username to use")
+	pass1 = flag.String("pass1", "pass1", "password to use")
+	pass2 = flag.String("pass2", "pass2", "alternate password to use")
+)
+
+func main() {
+	flag.Parse()
+	fmt.Println(term.Bluef("SSH Example"))
+
+	sshClt, err := ssh.Dial("tcp", *addr, &ssh.ClientConfig{
+		User:            *user,
+		Auth:            []ssh.AuthMethod{ssh.Password(*pass1)},
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+	})
+	if err != nil {
+		glog.Exitf("ssh.Dial(%q) failed: %v", *addr, err)
+	}
+	defer sshClt.Close()
+
+	e, _, err := expect.SpawnSSH(sshClt, timeout)
+	if err != nil {
+		glog.Exit(err)
+	}
+	defer e.Close()
+
+	e.ExpectBatch([]expect.Batcher{
+		&expect.BCas{[]expect.Caser{
+			&expect.Case{R: regexp.MustCompile(`router#`), T: expect.OK()},
+			&expect.Case{R: regexp.MustCompile(`Login: `), S: *user,
+				T: expect.Continue(expect.NewStatus(codes.PermissionDenied, "wrong username")), Rt: 3},
+			&expect.Case{R: regexp.MustCompile(`Password: `), S: *pass1, T: expect.Next(), Rt: 1},
+			&expect.Case{R: regexp.MustCompile(`Password: `), S: *pass1,
+				T: expect.Continue(expect.NewStatus(codes.PermissionDenied, "wrong password")), Rt: 1},
+		}},
+	}, timeout)
+
+	fmt.Println(term.Greenf("All done"))
+}
+```
+
+### Generic Spawner
+
+The Go Expect package supports adding new Spawners with the `func SpawnGeneric(opt *GenOptions, timeout time.Duration, opts ...Option) (*GExpect, <-chan error, error)`
+function. 
+
+*telnet spawner*
+
+From the [newspawner](https://github.com/google/goexpect/blob/master/examples/newspawner/telnet.go) example.
+
+```
+func telnetSpawn(addr string, timeout time.Duration, opts ...expect.Option) (expect.Expecter, <-chan error, error) {
+	conn, err := telnet.Dial(network, addr)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	resCh := make(chan error)
+
+	return expect.SpawnGeneric(&expect.GenOptions{
+		In:  conn,
+		Out: conn,
+		Wait: func() error {
+			return <-resCh
+		},
+		Close: func() error {
+			close(resCh)
+			return conn.Close()
+		},
+		Check: func() bool { return true },
+	}, timeout, opts...)
+}
+```
+
