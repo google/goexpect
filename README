@@ -9,6 +9,36 @@ This package is an implementation of [Expect](https://en.wikipedia.org/wiki/Expe
  - Has a batcher for implementing workflows without having to write extra logic
    and code.
 
+## Options
+
+All Spawn functions accept a variadic of type expect.Option , these are used for changing
+options of the Expecter.
+
+### CheckDuration
+
+The Go Expecter checks for new data every two seconds as default. This can be changed by using
+the CheckDuration `func CheckDuration(d time.Duration) Option`.
+
+### Verbose
+
+The Verbose option is used to turn on/off verbose logging for Expect/Send statements.
+This option can be very usefull when troubleshooting workflows since it will og every interaction
+with the device.
+
+### NoCheck
+
+The Go Expecter periodically checks that the spawned process/ssh/session/telnet etc. session is alive.
+This option turns that check off.
+
+### DebugCheck
+
+The DebugCheck option adds debugging to the alive Check done by the Expecter, this will start logging information
+everytime the check is run. Can be used for troubleshooting and debugging of Spawners.
+
+### ChangeCheck
+
+The ChangeCheck option makes it possible to replace the Spawner Check function with a brand new one.
+
 ## Basic Examples
 
 ### The [Wikipedia Expect](https://en.wikipedia.org/wiki/Expect) examples.
@@ -288,3 +318,58 @@ func telnetSpawn(addr string, timeout time.Duration, opts ...expect.Option) (exp
 }
 ```
 
+### Fake Spawner
+
+The Go Expect package includes a Fake Spawner `func SpawnFake(b []Batcher, timeout time.Duration, opt ...Option) (*GExpect, <-chan error, error)`. 
+This is expected to be used to simplify testing and faking of interactive workflows.
+
+*Fake Spawner*
+
+```
+// TestExpect tests the Expect function.
+func TestExpect(t *testing.T) {
+	tests := []struct {
+		name    string
+		fail    bool
+		srv     []Batcher
+		timeout time.Duration
+		re      *regexp.Regexp
+	}{{
+		name: "Match prompt",
+		srv: []Batcher{
+			&BSnd{`
+Pretty please don't hack my chassis
+
+router1> `},
+		},
+		re:      regexp.MustCompile("router1>"),
+		timeout: 2 * time.Second,
+	}, {
+		name: "Match fail",
+		fail: true,
+		re:   regexp.MustCompile("router1>"),
+		srv: []Batcher{
+			&BSnd{`
+Welcome
+
+Router42>`},
+		},
+		timeout: 1 * time.Second,
+	}}
+
+	for _, tst := range tests {
+		exp, _, err := SpawnFake(tst.srv, tst.timeout)
+		if err != nil {
+			if !tst.fail {
+				t.Errorf("%s: SpawnFake failed: %v", tst.name, err)
+			}
+			continue
+		}
+		out, _, err := exp.Expect(tst.re, tst.timeout)
+		if got, want := err != nil, tst.fail; got != want {
+			t.Errorf("%s: Expect(%q,%v) = %t want: %t , err: %v, out: %q", tst.name, tst.re.String(), tst.timeout, got, want, err, out)
+			continue
+		}
+	}
+}
+```
