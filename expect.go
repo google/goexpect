@@ -619,6 +619,7 @@ func (e *GExpect) ExpectSwitchCase(cs []Caser, timeout time.Duration) (string, [
 		}
 	}
 	chTicker := time.NewTicker(check)
+	defer chTicker.Stop()
 	// Read in current data and start actively check for matches.
 	var tbuf bytes.Buffer
 	if _, err := io.Copy(&tbuf, e); err != nil {
