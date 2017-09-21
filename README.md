@@ -276,7 +276,7 @@ func main() {
 			&expect.Case{R: regexp.MustCompile(`Login: `), S: *user,
 				T: expect.Continue(expect.NewStatus(codes.PermissionDenied, "wrong username")), Rt: 3},
 			&expect.Case{R: regexp.MustCompile(`Password: `), S: *pass1, T: expect.Next(), Rt: 1},
-			&expect.Case{R: regexp.MustCompile(`Password: `), S: *pass1,
+			&expect.Case{R: regexp.MustCompile(`Password: `), S: *pass2,
 				T: expect.Continue(expect.NewStatus(codes.PermissionDenied, "wrong password")), Rt: 1},
 		}},
 	}, timeout)
