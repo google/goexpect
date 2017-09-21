@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os/exec"
 	"regexp"
 	"strconv"
@@ -825,7 +826,9 @@ func Spawn(command string, timeout time.Duration, opts ...Option) (*GExpect, <-c
 	}
 	var t term.Termios
 	t.Raw()
-	t.Set(pty.Slave)
+	if err := t.Set(pty.Slave); err != nil {
+		return nil, nil, err
+	}
 
 	if timeout < 1 {
 		timeout = DefaultTimeout
@@ -1019,6 +1022,22 @@ func (e *GExpect) Read(p []byte) (nr int, err error) {
 	return e.out.Read(p)
 }
 
+// Write implements the Writer interface for expecter.
+func (e *GExpect) Write(p []byte) (nr int, err error) {
+	if err := e.Send(string(p)); err != nil {
+		return 0, err
+	}
+	return len(p), nil
+}
+
+// Flush empties the receive buffer by reading and discarding all data from it.
+func (e *GExpect) Flush() error {
+	if _, err := io.Copy(ioutil.Discard, e); err != nil {
+		return fmt.Errorf("flush failed: %v", err)
+	}
+	return nil
+}
+
 // Send sends a string to spawned process.
 func (e *GExpect) Send(in string) error {
 	if !e.check() {
@@ -1044,7 +1063,9 @@ func (e *GExpect) runcmd(res chan error) {
 	res <- nil
 	cErr := e.cmd.Wait()
 	close(chDone)
-	e.pty.Slave.Close()
+	if err := e.pty.Slave.Close(); err != nil {
+		log.Errorf("e.pty.Slave.Close() failed: %v", err)
+	}
 	// make sure the read/send routines are done before closing the pty.
 	<-clean
 	res <- cErr
@@ -1059,7 +1080,9 @@ func (e *GExpect) goIO(clean chan struct{}) (done chan struct{}) {
 	go e.send(done, &ptySync)
 	go func() {
 		ptySync.Wait()
-		e.pty.Master.Close()
+		if err := e.pty.Master.Close(); err != nil {
+			log.Errorf("e.pty.Master.Close() failed: %v", err)
+		}
 		close(clean)
 	}()
 	return done
