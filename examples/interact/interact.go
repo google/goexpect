@@ -2,7 +2,6 @@
 package main
 
 import (
-	"fmt"
 	"io"
 	"os"
 	"regexp"
@@ -42,16 +41,8 @@ func main() {
 	go io.Copy(pty.Master, os.Stdin)
 	go io.Copy(os.Stdout, pty.Master)
 
-	go io.Copy(e, pty.Slav)
-	go func() {
-		for {
-			nr, err := io.Copy(pty.Slave, e)
-			if err != nil {
-				fmt.Println(term.Redf("err: %v", err))
-			}
-			fmt.Println(term.Yellowf("nr: %d", nr))
-		}
-	}()
+	go io.Copy(e, pty.Slave)
+	go io.Copy(pty.Slave, e)
 
 	<-time.After(20 * time.Second)
 

@@ -634,8 +634,8 @@ func (e *GExpect) ExpectSwitchCase(cs []Caser, timeout time.Duration) (string, [
 	defer chTicker.Stop()
 	// Read in current data and start actively check for matches.
 	var tbuf bytes.Buffer
-	if _, err := io.Copy(&tbuf, e); err != nil {
-		return tbuf.String(), nil, -1, fmt.Errorf("io.Copy failed: %v", err)
+	if _, err := e.out.WriteTo(&tbuf); err != nil {
+		return tbuf.String(), nil, -1, fmt.Errorf("e.out.WriteTo failed: %v", err)
 	}
 	for {
 	L1:
@@ -696,9 +696,9 @@ func (e *GExpect) ExpectSwitchCase(cs []Caser, timeout time.Duration) (string, [
 			return o, match, i, s.Err()
 		}
 		if !e.check() {
-			nr, err := io.Copy(&tbuf, e)
+			nr, err := e.out.WriteTo(&tbuf)
 			if err != nil {
-				return tbuf.String(), nil, -1, fmt.Errorf("io.Copy failed: %v", err)
+				return tbuf.String(), nil, -1, fmt.Errorf("e.out.WriteTo failed: %v", err)
 			}
 			if nr == 0 {
 				return tbuf.String(), nil, -1, errors.New("expect: Process not running")
@@ -707,9 +707,9 @@ func (e *GExpect) ExpectSwitchCase(cs []Caser, timeout time.Duration) (string, [
 		select {
 		case <-timer.C:
 			// Expect timeout.
-			nr, err := io.Copy(&tbuf, e)
+			nr, err := e.out.WriteTo(&tbuf)
 			if err != nil {
-				return tbuf.String(), nil, -1, fmt.Errorf("io.Copy failed: %v", err)
+				return tbuf.String(), nil, -1, fmt.Errorf("e.out.WriteTo failed: %v", err)
 			}
 			// If we got no new data we return otherwise give it another chance to match.
 			if nr == 0 {
@@ -1031,7 +1031,7 @@ func (e *GExpect) Read(p []byte) (nr int, err error) {
 	e.expectingMutex.Lock()
 	defer e.expectingMutex.Unlock()
 	if e.expecting {
-		return 0, NewStatusf(codes.FailedPrecondition, "Read can't be used with an Expect* method running")
+		return 0, NewStatusf(codes.FailedPrecondition, "Read can't be used while Expect is running")
 	}
 	e.mu.Lock()
 	defer e.mu.Unlock()
