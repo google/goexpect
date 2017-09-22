@@ -58,7 +58,7 @@ func (s *Status) Err() error {
 }
 
 func (s *Status) Error() string {
-	return s.msg
+	return s.code.String() + ":: " + s.msg
 }
 
 // Option represents one Expecter option.
@@ -503,9 +503,9 @@ type GExpect struct {
 	chkDuration time.Duration
 	// verbose enables verbose logging.
 	verbose bool
-	// nonBlockingMutex protects the nonBlocking bool.
-	nonBlockingMutex sync.Mutex
-	nonBlocking      bool
+	// expectingMutex protects the expecting bool.
+	expectingMutex sync.Mutex
+	expecting      bool
 
 	// mu protects the output buffer. It must be held for any operations on out.
 	mu  sync.Mutex
@@ -583,13 +583,13 @@ func (e *GExpect) check() bool {
 // 	Given: vf11.hnd01.net            UP      35 (4)        34 (4)          CONNECTED         0              0/0
 // 	Would send: show arp vf11.hnd01.net
 func (e *GExpect) ExpectSwitchCase(cs []Caser, timeout time.Duration) (string, []string, int, error) {
-	e.nonBlockingMutex.Lock()
-	e.nonBlocking = true
-	e.nonBlockingMutex.Unlock()
+	e.expectingMutex.Lock()
+	e.expecting = true
+	e.expectingMutex.Unlock()
 	defer func() {
-		e.nonBlockingMutex.Lock()
-		e.nonBlocking = false
-		e.nonBlockingMutex.Unlock()
+		e.expectingMutex.Lock()
+		e.expecting = false
+		e.expectingMutex.Unlock()
 	}()
 	// Compile all regexps
 	rs := make([]*regexp.Regexp, 0, len(cs))
@@ -1028,14 +1028,13 @@ func (e *GExpect) Close() error {
 
 // Read implements the reader interface for the out buffer.
 func (e *GExpect) Read(p []byte) (nr int, err error) {
+	e.expectingMutex.Lock()
+	defer e.expectingMutex.Unlock()
+	if e.expecting {
+		return 0, NewStatusf(codes.FailedPrecondition, "Read can't be used with an Expect* method running")
+	}
 	e.mu.Lock()
 	defer e.mu.Unlock()
-	e.nonBlockingMutex.Lock()
-	defer e.nonBlockingMutex.Unlock()
-	if e.nonBlocking {
-		return e.out.Read(p)
-	}
-
 	nr, err = e.out.Read(p)
 	if err != nil && err != io.EOF {
 		return 0, err
