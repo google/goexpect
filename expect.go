@@ -503,6 +503,9 @@ type GExpect struct {
 	chkDuration time.Duration
 	// verbose enables verbose logging.
 	verbose bool
+	// nonBlockingMutex protects the nonBlocking bool.
+	nonBlockingMutex sync.Mutex
+	nonBlocking      bool
 
 	// mu protects the output buffer. It must be held for any operations on out.
 	mu  sync.Mutex
@@ -580,6 +583,14 @@ func (e *GExpect) check() bool {
 // 	Given: vf11.hnd01.net            UP      35 (4)        34 (4)          CONNECTED         0              0/0
 // 	Would send: show arp vf11.hnd01.net
 func (e *GExpect) ExpectSwitchCase(cs []Caser, timeout time.Duration) (string, []string, int, error) {
+	e.nonBlockingMutex.Lock()
+	e.nonBlocking = true
+	e.nonBlockingMutex.Unlock()
+	defer func() {
+		e.nonBlockingMutex.Lock()
+		e.nonBlocking = false
+		e.nonBlockingMutex.Unlock()
+	}()
 	// Compile all regexps
 	rs := make([]*regexp.Regexp, 0, len(cs))
 	for _, c := range cs {
@@ -708,13 +719,13 @@ func (e *GExpect) ExpectSwitchCase(cs []Caser, timeout time.Duration) (string, [
 		case <-chTicker.C:
 			// Periodical timer to make sure data is handled in case the <-e.rcv channel
 			// was missed.
-			if _, err := io.Copy(&tbuf, e); err != nil {
-				return tbuf.String(), nil, -1, fmt.Errorf("io.Copy failed: %v", err)
+			if _, err := e.out.WriteTo(&tbuf); err != nil {
+				return tbuf.String(), nil, -1, fmt.Errorf("e.out.WriteTo failed: %v", err)
 			}
 		case <-e.rcv:
 			// Data to fetch.
-			if _, err := io.Copy(&tbuf, e); err != nil {
-				return tbuf.String(), nil, -1, fmt.Errorf("io.Copy failed: %v", err)
+			if _, err := e.out.WriteTo(&tbuf); err != nil {
+				return tbuf.String(), nil, -1, fmt.Errorf("io.out.WriteTo failed: %v", err)
 			}
 		}
 	}
@@ -1019,7 +1030,17 @@ func (e *GExpect) Close() error {
 func (e *GExpect) Read(p []byte) (nr int, err error) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
-	return e.out.Read(p)
+	e.nonBlockingMutex.Lock()
+	defer e.nonBlockingMutex.Unlock()
+	if e.nonBlocking {
+		return e.out.Read(p)
+	}
+
+	nr, err = e.out.Read(p)
+	if err != nil && err != io.EOF {
+		return 0, err
+	}
+	return nr, nil
 }
 
 // Write implements the Writer interface for expecter.
