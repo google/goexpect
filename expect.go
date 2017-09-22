@@ -1033,8 +1033,6 @@ func (e *GExpect) Read(p []byte) (nr int, err error) {
 	if e.expecting {
 		return 0, NewStatusf(codes.FailedPrecondition, "Read can't be used while Expect is running")
 	}
-	e.mu.Lock()
-	defer e.mu.Unlock()
 	if e.out.Len() == 0 {
 		chTicker := time.NewTicker(2 * time.Second)
 		defer chTicker.Stop()
@@ -1042,14 +1040,16 @@ func (e *GExpect) Read(p []byte) (nr int, err error) {
 			select {
 			case <-e.rcv:
 			case <-chTicker.C:
-				if e.out.Len() != 0 {
+				if e.out.Len() == 0 {
 					continue
 				}
 			}
 			break
 		}
 	}
+	e.mu.Lock()
 	nr, err = e.out.Read(p)
+	e.mu.Unlock()
 	if err != nil && err != io.EOF {
 		return 0, err
 	}
