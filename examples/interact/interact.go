@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	command = `zsh -i`
+	command = `bash -i`
 	timeout = 10 * time.Minute
 )
 
@@ -34,7 +34,7 @@ func main() {
 	}
 	defer backupTerm.Set(os.Stdin)
 
-	e, _, err := expect.Spawn(command, -1)
+	e, finCh, err := expect.Spawn(command, -1)
 	if err != nil {
 		glog.Exit(err)
 	}
@@ -43,16 +43,7 @@ func main() {
 	go io.Copy(os.Stdout, pty.Master)
 
 	go io.Copy(e, pty.Slave)
-	go func() {
-		for {
-			nr, err := io.Copy(pty.Slave, e)
-			if err != nil {
-				fmt.Println(term.Redf("Read err: %v", err))
-			}
-			fmt.Println(term.Greenf("Read nr: %d bytes", nr))
-		}
-	}()
+	go io.Copy(pty.Slave, e)
 
-	<-time.After(20 * time.Second)
-
+	fmt.Println(<-finCh)
 }
