@@ -1038,16 +1038,15 @@ func (e *GExpect) Read(p []byte) (nr int, err error) {
 	if e.out.Len() == 0 {
 		chTicker := time.NewTicker(2 * time.Second)
 		defer chTicker.Stop()
-	L1:
 		for {
 			select {
 			case <-e.rcv:
-				break L1
 			case <-chTicker.C:
 				if e.out.Len() != 0 {
-					break L1
+					continue
 				}
 			}
+			break
 		}
 	}
 	nr, err = e.out.Read(p)
