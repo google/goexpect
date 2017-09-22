@@ -2,48 +2,73 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"os"
+	"os/user"
 	"regexp"
-	"time"
 
 	"github.com/golang/glog"
 	"github.com/google/goexpect"
-	"github.com/google/goterm/term"
 )
 
 const (
 	command = `bash -i`
-	timeout = 10 * time.Minute
+	endRune = ''
 )
 
-var piRE = regexp.MustCompile(`3.14[0-9]*`)
-
 func main() {
-	pty, err := term.OpenPTY()
-	if err != nil {
-		glog.Exit(err)
-	}
-	backupTerm, _ := term.Attr(os.Stdin)
-	myTerm := backupTerm
-
-	myTerm.Raw()
-	if err := myTerm.Set(os.Stdin); err != nil {
-		glog.Exit(err)
-	}
-	defer backupTerm.Set(os.Stdin)
-
 	e, finCh, err := expect.Spawn(command, -1)
 	if err != nil {
 		glog.Exit(err)
 	}
 
-	go io.Copy(pty.Master, os.Stdin)
-	go io.Copy(os.Stdout, pty.Master)
+	usr, err := user.Current()
+	if err != nil {
+		glog.Exit(err)
+	}
+	re, err := regexp.Compile(usr.Username)
+	if err != nil {
+		glog.Exit(err)
+	}
 
-	go io.Copy(e, pty.Slave)
-	go io.Copy(pty.Slave, e)
+	if err := e.Send("cat /etc/passwd\n"); err != nil {
+		glog.Exit(err)
+	}
+	_, _, err = e.Expect(re, -1)
+	if err != nil {
+		glog.Exit(err)
+	}
+
+	go io.Copy(e, os.Stdin)
+
+	var buf = make([]byte, 512)
+	for {
+		nr, err := e.Read(buf)
+		if err != nil {
+			glog.Exit(err)
+		}
+		if bytes.ContainsRune(buf[:nr], endRune) {
+			fmt.Println("Found the rune!")
+			break
+		}
+		_, err = os.Stdout.Write(buf[:nr])
+		if err != nil {
+			glog.Exit(err)
+		}
+	}
+
+	if err := e.Send("cat /etc/passwd\n"); err != nil {
+		glog.Exit(err)
+	}
+	_, _, err = e.Expect(re, -1)
+	if err != nil {
+		glog.Exit(err)
+	}
+	if err := e.Send("exit\n"); err != nil {
+		glog.Exit(err)
+	}
 
 	fmt.Println(<-finCh)
 }
