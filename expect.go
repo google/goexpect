@@ -28,6 +28,44 @@ import (
 	"github.com/google/goterm/term"
 )
 
+// Logger defines a basic logging interface.
+type Logger interface {
+	Info(args ...interface{})
+	Infof(format string, args ...interface{})
+	Warning(args ...interface{})
+	Warningf(format string, args ...interface{})
+	Error(args ...interface{})
+	Errorf(format string, args ...interface{})
+}
+
+type glogger struct{}
+
+func (g *glogger) Info(args ...interface{}) {
+	log.Info(args...)
+}
+
+func (g *glogger) Infof(format string, args ...interface{}) {
+	log.Infof(format, args...)
+}
+
+func (g *glogger) Warning(args ...interface{}) {
+	log.Warning(args...)
+}
+
+func (g *glogger) Warningf(format string, args ...interface{}) {
+	log.Warningf(format, args...)
+}
+
+func (g *glogger) Error(args ...interface{}) {
+	log.Error(args...)
+}
+
+func (g *glogger) Errorf(format string, args ...interface{}) {
+	log.Errorf(format, args...)
+}
+
+var logger Logger = &glogger{}
+
 // DefaultTimeout is the default Expect timeout.
 const DefaultTimeout = 60 * time.Second
 
@@ -365,7 +403,7 @@ func Next() func() (Tag, *Status) {
 // LogContinue logs the message and returns the Continue Tag and status.
 func LogContinue(msg string, s *Status) func() (Tag, *Status) {
 	return func() (Tag, *Status) {
-		log.Info(msg)
+		logger.Info(msg)
 		return ContinueTag, s
 	}
 }
@@ -642,7 +680,7 @@ func (e *GExpect) ExpectSwitchCase(cs []Caser, timeout time.Duration) (string, [
 			}
 
 			if e.verbose {
-				log.Infof("Match for RE: %q found: %q Buffer: %q", rs[i].String(), match, tbuf.String())
+				logger.Infof("Match for RE: %q found: %q Buffer: %q", rs[i].String(), match, tbuf.String())
 			}
 
 			// Clear the buffer directly after match.
@@ -797,7 +835,7 @@ func SpawnFake(b []Batcher, timeout time.Duration, opt ...Option) (*GExpect, <-c
 	go func() {
 		res, err := srv.ExpectBatch(b, timeout)
 		if err != nil {
-			log.Warningf("ExpectBatch(%v,%v) failed: %v, out: %v", b, timeout, err, res)
+			logger.Warningf("ExpectBatch(%v,%v) failed: %v, out: %v", b, timeout, err, res)
 		}
 		close(done)
 	}()
@@ -963,11 +1001,11 @@ func (e *GExpect) waitForSession(r chan error, wait func() error, sIn io.WriteCl
 				return
 			case sstr, ok := <-e.snd:
 				if !ok {
-					log.Infof("Send channel closed")
+					logger.Infof("Send channel closed")
 					return
 				}
 				if _, err := sIn.Write([]byte(sstr)); err != nil || !e.check() {
-					log.Infof("Write failed: %v", err)
+					logger.Infof("Write failed: %v", err)
 					return
 				}
 			}
@@ -980,7 +1018,7 @@ func (e *GExpect) waitForSession(r chan error, wait func() error, sIn io.WriteCl
 			nr, err := out.Read(buf)
 			if err != nil || !e.check() {
 				if err == io.EOF {
-					log.V(2).Infof("read closing down: %v", err)
+					//logger.V(2).Infof("read closing down: %v", err)
 					return
 				}
 				return
@@ -1026,7 +1064,7 @@ func (e *GExpect) Send(in string) error {
 	}
 	e.snd <- in
 	if e.verbose {
-		log.Infof("Sent: %q", in)
+		logger.Infof("Sent: %q", in)
 	}
 	return nil
 }
@@ -1089,7 +1127,7 @@ func (e *GExpect) read(done chan struct{}, ptySync *sync.WaitGroup) {
 		nr, err := e.pty.Master.Read(buf)
 		if err != nil || !e.check() {
 			if err == io.EOF {
-				log.V(2).Infof("read closing down: %v", err)
+				//log.V(2).Infof("read closing down: %v", err)
 				return
 			}
 			return
@@ -1118,7 +1156,7 @@ func (e *GExpect) send(done chan struct{}, ptySync *sync.WaitGroup) {
 				return
 			}
 			if _, err := e.pty.Master.Write([]byte(sstr)); err != nil || !e.check() {
-				log.Infof("send failed: %v", err)
+				logger.Infof("send failed: %v", err)
 				break
 			}
 		}
