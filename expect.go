@@ -66,6 +66,10 @@ func (g *glogger) Errorf(format string, args ...interface{}) {
 
 var logger Logger = &glogger{}
 
+func ChangeLogger(lr Logger) {
+	logger = lr
+}
+
 // DefaultTimeout is the default Expect timeout.
 const DefaultTimeout = 60 * time.Second
 
