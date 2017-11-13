@@ -517,7 +517,7 @@ type GExpect struct {
 	// verbose enables verbose logging.
 	verbose bool
 	// verboseWriter if set specifies where to write verbose information.
-	verboseWriter *io.Writer
+	verboseWriter io.Writer
 
 	// mu protects the output buffer. It must be held for any operations on out.
 	mu  sync.Mutex
@@ -658,7 +658,18 @@ func (e *GExpect) ExpectSwitchCase(cs []Caser, timeout time.Duration) (string, [
 			}
 
 			if e.verbose {
-				log.Infof("Match for RE: %q found: %q Buffer: %q", rs[i].String(), match, tbuf.String())
+				vStr := fmt.Sprintf("Match for RE: %q found: %q Buffer: %q", rs[i].String(), match, tbuf.String())
+				if e.verboseWriter != nil {
+					for n, bytesRead := 0, 0; bytesRead < len(vStr); bytesRead += n {
+						n, err := e.verboseWriter.Write([]byte(vStr)[n:])
+						if err != nil {
+							log.Warningf("Write to Verbose Writer failed: %v", err)
+							break
+						}
+					}
+				} else {
+					log.Info(vStr)
+				}
 			}
 
 			// Clear the buffer directly after match.
@@ -1042,7 +1053,18 @@ func (e *GExpect) Send(in string) error {
 	}
 	e.snd <- in
 	if e.verbose {
-		log.Infof("Sent: %q", in)
+		vStr := fmt.Sprintf("Sent: %q", in)
+		if e.verboseWriter != nil {
+			for n, bytesRead := 0, 0; bytesRead < len(vStr); bytesRead += n {
+				n, err := e.verboseWriter.Write([]byte(vStr)[n:])
+				if err != nil {
+					log.Warningf("Write to Verbose Writer failed: %v", err)
+					break
+				}
+				return nil
+			}
+		}
+		log.Info(vStr)
 	}
 	return nil
 }
