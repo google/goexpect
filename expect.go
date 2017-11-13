@@ -90,7 +90,7 @@ func Verbose(v bool) Option {
 func VerboseWriter(w io.Writer) Option {
 	return func(e *GExpect) Option {
 		prev := e.verboseWriter
-		e.verbose = w
+		e.verboseWriter = w
 		return VerboseWriter(prev)
 	}
 }
@@ -660,8 +660,8 @@ func (e *GExpect) ExpectSwitchCase(cs []Caser, timeout time.Duration) (string, [
 			if e.verbose {
 				vStr := fmt.Sprintf("Match for RE: %q found: %q Buffer: %q", rs[i].String(), match, tbuf.String())
 				if e.verboseWriter != nil {
-					for n, bytesRead := 0, 0; bytesRead < len(vStr); bytesRead += n {
-						n, err := e.verboseWriter.Write([]byte(vStr)[n:])
+					for n, bytesRead, err := 0, 0, error(nil); bytesRead < len(vStr); bytesRead += n {
+						n, err = e.verboseWriter.Write([]byte(vStr)[n:])
 						if err != nil {
 							log.Warningf("Write to Verbose Writer failed: %v", err)
 							break
@@ -1055,8 +1055,8 @@ func (e *GExpect) Send(in string) error {
 	if e.verbose {
 		vStr := fmt.Sprintf("Sent: %q", in)
 		if e.verboseWriter != nil {
-			for n, bytesRead := 0, 0; bytesRead < len(vStr); bytesRead += n {
-				n, err := e.verboseWriter.Write([]byte(vStr)[n:])
+			for n, bytesRead, err := 0, 0, error(nil); bytesRead < len(vStr); bytesRead += n {
+				n, err = e.verboseWriter.Write([]byte(vStr)[n:])
 				if err != nil {
 					log.Warningf("Write to Verbose Writer failed: %v", err)
 					break
