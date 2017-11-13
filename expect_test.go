@@ -582,6 +582,73 @@ func ExampleChangeCheck() {
 	// Original check
 }
 
+// ExampleVerbose changes the Verbose and VerboseWriter options.
+func ExampleVerbose() {
+	rIn, wIn := io.Pipe()
+	rOut, wOut := io.Pipe()
+	waitCh := make(chan error)
+	outCh := make(chan string)
+	defer close(outCh)
+
+	go fakeCli(cliMap, rIn, wOut)
+	go func() {
+		var last string
+		for s := range outCh {
+			if s == last {
+				continue
+			}
+			fmt.Println(s)
+			last = s
+		}
+	}()
+
+	exp, r, err := SpawnGeneric(&GenOptions{
+		In:    wIn,
+		Out:   rOut,
+		Wait:  func() error { return <-waitCh },
+		Close: func() error { return wIn.Close() },
+		Check: func() bool {
+			outCh <- "Original check"
+			return true
+		}}, -1)
+	if err != nil {
+		fmt.Printf("SpawnGeneric failed: %v\n", err)
+		return
+	}
+	re := regexp.MustCompile("testrouter# ")
+	interact := func() {
+		for cmd := range cliMap {
+			if err := exp.Send(cmd + "\n"); err != nil {
+				fmt.Printf("exp.Send(%q) failed: %v\n", cmd+"\n", err)
+				return
+			}
+			out, _, err := exp.Expect(re, -1)
+			if err != nil {
+				fmt.Printf("exp.Expect(%v) failed: %v out: %v", re, err, out)
+				return
+			}
+		}
+	}
+	interact()
+	prev := exp.Options(ChangeCheck(func() bool {
+		outCh <- "Replaced check"
+		return true
+	}))
+	interact()
+	exp.Options(prev)
+	interact()
+
+	waitCh <- nil
+	exp.Close()
+	wOut.Close()
+
+	<-r
+	// Output:
+	// Original check
+	// Replaced check
+	// Original check
+}
+
 // TestSpawnGeneric tests out the generic spawn function.
 func TestSpawnGeneric(t *testing.T) {
 	fr, fw := io.Pipe()
