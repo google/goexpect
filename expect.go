@@ -36,19 +36,23 @@ const (
 	checkDuration = 2 * time.Second // checkDuration how often to check for new output.
 )
 
+// Status contains an errormessage and a status code.
 type Status struct {
 	code codes.Code
 	msg  string
 }
 
+// NewStatus creates a Status with the provided code and message.
 func NewStatus(code codes.Code, msg string) *Status {
 	return &Status{code, msg}
 }
 
+// NewStatusf returns a Status with the providead code and a formatted message.
 func NewStatusf(code codes.Code, format string, a ...interface{}) *Status {
 	return NewStatus(code, fmt.Sprintf(fmt.Sprintf(format, a...)))
 }
 
+// Err is a helper to handle errors.
 func (s *Status) Err() error {
 	if s == nil || s.code == codes.OK {
 		return nil
@@ -56,6 +60,7 @@ func (s *Status) Err() error {
 	return s
 }
 
+// Error is here to adhere to the error interface.
 func (s *Status) Error() string {
 	return s.msg
 }
@@ -78,6 +83,15 @@ func Verbose(v bool) Option {
 		prev := e.verbose
 		e.verbose = v
 		return Verbose(prev)
+	}
+}
+
+// VerboseWriter sets an alternate destination for verbose logs.
+func VerboseWriter(w io.Writer) Option {
+	return func(e *GExpect) Option {
+		prev := e.verboseWriter
+		e.verbose = w
+		return VerboseWriter(prev)
 	}
 }
 
@@ -502,6 +516,8 @@ type GExpect struct {
 	chkDuration time.Duration
 	// verbose enables verbose logging.
 	verbose bool
+	// verboseWriter if set specifies where to write verbose information.
+	verboseWriter *io.Writer
 
 	// mu protects the output buffer. It must be held for any operations on out.
 	mu  sync.Mutex
