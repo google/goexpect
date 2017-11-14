@@ -636,8 +636,8 @@ func ExampleVerbose() {
 
 	<-r
 	// Output:
-	// Sent: "show system uptime\n"
-	// Match for RE: "testrouter# " found: ["testrouter# "] Buffer: Current time:      1998-10-13 19:45:47 UTC
+	// \033[32mSent:\033[32m "show system uptime\n"
+	// \033[33mMatch for RE:\033[33m "testrouter# " found: ["testrouter# "] Buffer: Current time:      1998-10-13 19:45:47 UTC
 	// Time Source:       NTP CLOCK
 	// System booted:     1998-10-12 20:51:41 UTC (22:54:06 ago)
 	// Protocols started: 1998-10-13 19:33:45 UTC (00:12:02 ago)
@@ -645,8 +645,8 @@ func ExampleVerbose() {
 	// 12:45PM  up 22:54, 2 users, load averages: 0.07, 0.02, 0.01
 	//
 	// testuser@testrouter#
-	// Sent: "show version\n"
-	// Match for RE: "testrouter# " found: ["testrouter# "] Buffer: Cisco IOS Software, 3600 Software (C3660-I-M), Version 12.3(4)T
+	// \033[32mSent:\033[32m "show version\n"
+	// \033[33mMatch for RE:\033[33m "testrouter# " found: ["testrouter# "] Buffer: Cisco IOS Software, 3600 Software (C3660-I-M), Version 12.3(4)T
 	//
 	// TAC Support: http://www.cisco.com/tac
 	// Copyright (c) 1986-2003 by Cisco Systems, Inc.
@@ -677,8 +677,8 @@ func ExampleVerbose() {
 	// Configuration register is 0x2102
 	//
 	// testrouter#
-	// Sent: "show system users\n"
-	// Match for RE: "testrouter# " found: ["testrouter# "] Buffer: 7:30PM  up 4 days,  2:26, 2 users, load averages: 0.07, 0.02, 0.01
+	// \033[32mSent:\033[32m "show system users\n"
+	// \033[33mMatch for RE:\033[33m "testrouter# " found: ["testrouter# "] Buffer: 7:30PM  up 4 days,  2:26, 2 users, load averages: 0.07, 0.02, 0.01
 	// USER     TTY FROM              LOGIN@  IDLE WHAT
 	// root     d0  -                Fri05PM 4days -csh (csh)
 	// blue   p0 level5.company.net 7:30PM     - cli
