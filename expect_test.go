@@ -610,7 +610,7 @@ func ExampleVerbose() {
 		Check: func() bool {
 			outCh <- "Original check"
 			return true
-		}}, -1)
+		}}, -1, Verbose(true), VerboseWriter(os.Stdout))
 	if err != nil {
 		fmt.Printf("SpawnGeneric failed: %v\n", err)
 		return
@@ -629,13 +629,6 @@ func ExampleVerbose() {
 			}
 		}
 	}
-	interact()
-	prev := exp.Options(ChangeCheck(func() bool {
-		outCh <- "Replaced check"
-		return true
-	}))
-	interact()
-	exp.Options(prev)
 	interact()
 
 	waitCh <- nil
@@ -1000,7 +993,7 @@ L1:
 				}
 				o, _, err := exp.Expect(re, to)
 				if err != nil {
-					t.Errorf("%s: Expect(%q,%v) failed: %v, out: %q", file, ts.Arg, to, err, o)
+					t.Errorf("%s: Expect(%q,%v) failed: %v, out: %q", file, ts.Arg(), to, err, o)
 					continue L1
 				}
 				t.Log("Scenario:", file, "expect:", ts.Arg(), " found")
