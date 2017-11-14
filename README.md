@@ -30,7 +30,7 @@ with the device.
 The VerboseWriter option can be used to change where the verbose session logs are written.
 Using this option will start writing verbose output to the provided io.Writer instead of the glog default.
 
-See the ExampleVerbose code for an example of how to use this. 
+See the [ExampleVerbose](https://github.com/google/goexpect/blob/5c8d637b0287a2ae7bb805554056728c453871e4/expect_test.go#L585) code for an example of how to use this. 
 
 ### NoCheck
 
