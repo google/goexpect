@@ -377,8 +377,8 @@ func TestBatcher(t *testing.T) {
 
 var (
 	cliMap = map[string]string{
-		"show system uptime": `Current time:      1998-10-13 19:45:47 UTC 
-Time Source:       NTP CLOCK 
+		"show system uptime": `Current time:      1998-10-13 19:45:47 UTC
+Time Source:       NTP CLOCK
 System booted:     1998-10-12 20:51:41 UTC (22:54:06 ago)
 Protocols started: 1998-10-13 19:33:45 UTC (00:12:02 ago)
 Last configured:   1998-10-13 19:33:45 UTC (00:12:02 ago) by abc
