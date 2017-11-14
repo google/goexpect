@@ -650,6 +650,13 @@ func ExampleVerbose() {
 	// 12:45PM  up 22:54, 2 users, load averages: 0.07, 0.02, 0.01
 	//
 	// testuser@testrouter#
+	// [34mSent:[39m "show system users\n"
+	// [32mMatch for RE:[39m "testrouter#" found: ["testrouter#"] Buffer: 7:30PM  up 4 days,  2:26, 2 users, load averages: 0.07, 0.02, 0.01
+	// USER     TTY FROM              LOGIN@  IDLE WHAT
+	// root     d0  -                Fri05PM 4days -csh (csh)
+	// blue   p0 level5.company.net 7:30PM     - cli
+	//
+	// testuser@testrouter#
 	// [34mSent:[39m "show version\n"
 	// [32mMatch for RE:[39m "testrouter#" found: ["testrouter#"] Buffer: Cisco IOS Software, 3600 Software (C3660-I-M), Version 12.3(4)T
 	//
@@ -681,13 +688,6 @@ func ExampleVerbose() {
 	// Configuration register is 0x2102
 	//
 	// testrouter#
-	// [34mSent:[39m "show system users\n"
-	// [32mMatch for RE:[39m "testrouter#" found: ["testrouter#"] Buffer: 7:30PM  up 4 days,  2:26, 2 users, load averages: 0.07, 0.02, 0.01
-	// USER     TTY FROM              LOGIN@  IDLE WHAT
-	// root     d0  -                Fri05PM 4days -csh (csh)
-	// blue   p0 level5.company.net 7:30PM     - cli
-	//
-	// testuser@testrouter#
 
 }
 
