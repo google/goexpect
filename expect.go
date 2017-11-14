@@ -36,19 +36,23 @@ const (
 	checkDuration = 2 * time.Second // checkDuration how often to check for new output.
 )
 
+// Status contains an errormessage and a status code.
 type Status struct {
 	code codes.Code
 	msg  string
 }
 
+// NewStatus creates a Status with the provided code and message.
 func NewStatus(code codes.Code, msg string) *Status {
 	return &Status{code, msg}
 }
 
+// NewStatusf returns a Status with the providead code and a formatted message.
 func NewStatusf(code codes.Code, format string, a ...interface{}) *Status {
 	return NewStatus(code, fmt.Sprintf(fmt.Sprintf(format, a...)))
 }
 
+// Err is a helper to handle errors.
 func (s *Status) Err() error {
 	if s == nil || s.code == codes.OK {
 		return nil
@@ -56,6 +60,7 @@ func (s *Status) Err() error {
 	return s
 }
 
+// Error is here to adhere to the error interface.
 func (s *Status) Error() string {
 	return s.msg
 }
@@ -78,6 +83,15 @@ func Verbose(v bool) Option {
 		prev := e.verbose
 		e.verbose = v
 		return Verbose(prev)
+	}
+}
+
+// VerboseWriter sets an alternate destination for verbose logs.
+func VerboseWriter(w io.Writer) Option {
+	return func(e *GExpect) Option {
+		prev := e.verboseWriter
+		e.verboseWriter = w
+		return VerboseWriter(prev)
 	}
 }
 
@@ -502,6 +516,8 @@ type GExpect struct {
 	chkDuration time.Duration
 	// verbose enables verbose logging.
 	verbose bool
+	// verboseWriter if set specifies where to write verbose information.
+	verboseWriter io.Writer
 
 	// mu protects the output buffer. It must be held for any operations on out.
 	mu  sync.Mutex
@@ -642,7 +658,18 @@ func (e *GExpect) ExpectSwitchCase(cs []Caser, timeout time.Duration) (string, [
 			}
 
 			if e.verbose {
-				log.Infof("Match for RE: %q found: %q Buffer: %q", rs[i].String(), match, tbuf.String())
+				if e.verboseWriter != nil {
+					vStr := fmt.Sprintln(term.Green("Match for RE:").String() + fmt.Sprintf(" %q found: %q Buffer: %s", rs[i].String(), match, tbuf.String()))
+					for n, bytesRead, err := 0, 0, error(nil); bytesRead < len(vStr); bytesRead += n {
+						n, err = e.verboseWriter.Write([]byte(vStr)[n:])
+						if err != nil {
+							log.Warningf("Write to Verbose Writer failed: %v", err)
+							break
+						}
+					}
+				} else {
+					log.Infof("Match for RE: %q found: %q Buffer: %q", rs[i].String(), match, tbuf.String())
+				}
 			}
 
 			// Clear the buffer directly after match.
@@ -1026,7 +1053,18 @@ func (e *GExpect) Send(in string) error {
 	}
 	e.snd <- in
 	if e.verbose {
-		log.Infof("Sent: %q", in)
+		if e.verboseWriter != nil {
+			vStr := fmt.Sprintln(term.Blue("Sent:").String() + fmt.Sprintf(" %q", in))
+			for n, bytesRead, err := 0, 0, error(nil); bytesRead < len(vStr); bytesRead += n {
+				n, err = e.verboseWriter.Write([]byte(vStr)[n:])
+				if err != nil {
+					log.Warningf("Write to Verbose Writer failed: %v", err)
+					break
+				}
+				return nil
+			}
+		}
+		log.Info("Sent: %q", in)
 	}
 	return nil
 }

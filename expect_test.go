@@ -13,6 +13,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -377,14 +378,14 @@ func TestBatcher(t *testing.T) {
 
 var (
 	cliMap = map[string]string{
-		"show system uptime": `Current time:      1998-10-13 19:45:47 UTC 
-Time Source:       NTP CLOCK 
+		"show system uptime": `Current time:      1998-10-13 19:45:47 UTC
+Time Source:       NTP CLOCK
 System booted:     1998-10-12 20:51:41 UTC (22:54:06 ago)
 Protocols started: 1998-10-13 19:33:45 UTC (00:12:02 ago)
 Last configured:   1998-10-13 19:33:45 UTC (00:12:02 ago) by abc
 12:45PM  up 22:54, 2 users, load averages: 0.07, 0.02, 0.01
 
-testuser@testrouter# `,
+testuser@testrouter#`,
 		"show version": `Cisco IOS Software, 3600 Software (C3660-I-M), Version 12.3(4)T
 
 TAC Support: http://www.cisco.com/tac
@@ -392,7 +393,7 @@ Copyright (c) 1986-2003 by Cisco Systems, Inc.
 Compiled Thu 18-Sep-03 15:37 by ccai
 
 ROM: System Bootstrap, Version 12.0(6r)T, RELEASE SOFTWARE (fc1)
-ROM: 
+ROM:
 
 C3660-1 uptime is 1 week, 3 days, 6 hours, 41 minutes
 System returned to ROM by power-on
@@ -401,7 +402,6 @@ System image file is "slot0:tftpboot/c3660-i-mz.123-4.T"
 Cisco 3660 (R527x) processor (revision 1.0) with 57344K/8192K bytes of memory.
 Processor board ID JAB055180FF
 R527x CPU at 225Mhz, Implementation 40, Rev 10.0, 2048KB L2 Cache
-
 
 3660 Chassis type: ENTERPRISE
 2 FastEthernet interfaces
@@ -415,13 +415,13 @@ Flash card inserted. Reading filesystem...done.
 
 Configuration register is 0x2102
 
-testrouter# `,
+testrouter#`,
 		"show system users": `7:30PM  up 4 days,  2:26, 2 users, load averages: 0.07, 0.02, 0.01
 USER     TTY FROM              LOGIN@  IDLE WHAT
 root     d0  -                Fri05PM 4days -csh (csh)
 blue   p0 level5.company.net 7:30PM     - cli
 
-testuser@testrouter# `,
+testuser@testrouter#`,
 	}
 )
 
@@ -465,7 +465,7 @@ func ExampleDebugCheck() {
 		log.Errorf("SpawnGeneric failed: %v", err)
 		return
 	}
-	re := regexp.MustCompile("testrouter# ")
+	re := regexp.MustCompile("testrouter#")
 	interact := func() {
 		for cmd := range cliMap {
 			if err := exp.Send(cmd + "\n"); err != nil {
@@ -548,7 +548,7 @@ func ExampleChangeCheck() {
 		fmt.Printf("SpawnGeneric failed: %v\n", err)
 		return
 	}
-	re := regexp.MustCompile("testrouter# ")
+	re := regexp.MustCompile("testrouter#")
 	interact := func() {
 		for cmd := range cliMap {
 			if err := exp.Send(cmd + "\n"); err != nil {
@@ -582,6 +582,115 @@ func ExampleChangeCheck() {
 	// Original check
 }
 
+// ExampleVerbose changes the Verbose and VerboseWriter options.
+func ExampleVerbose() {
+	rIn, wIn := io.Pipe()
+	rOut, wOut := io.Pipe()
+	waitCh := make(chan error)
+	outCh := make(chan string)
+	defer close(outCh)
+
+	go fakeCli(cliMap, rIn, wOut)
+	go func() {
+		var last string
+		for s := range outCh {
+			if s == last {
+				continue
+			}
+			fmt.Println(s)
+			last = s
+		}
+	}()
+
+	exp, r, err := SpawnGeneric(&GenOptions{
+		In:    wIn,
+		Out:   rOut,
+		Wait:  func() error { return <-waitCh },
+		Close: func() error { return wIn.Close() },
+		Check: func() bool {
+			return true
+		}}, -1, Verbose(true), VerboseWriter(os.Stdout))
+	if err != nil {
+		fmt.Printf("SpawnGeneric failed: %v\n", err)
+		return
+	}
+	re := regexp.MustCompile("testrouter#")
+	var interactCmdSorted []string
+	for k := range cliMap {
+		interactCmdSorted = append(interactCmdSorted, k)
+	}
+	sort.Strings(interactCmdSorted)
+	interact := func() {
+		for _, cmd := range interactCmdSorted {
+			if err := exp.Send(cmd + "\n"); err != nil {
+				fmt.Printf("exp.Send(%q) failed: %v\n", cmd+"\n", err)
+				return
+			}
+			out, _, err := exp.Expect(re, -1)
+			if err != nil {
+				fmt.Printf("exp.Expect(%v) failed: %v out: %v", re, err, out)
+				return
+			}
+		}
+	}
+	interact()
+
+	waitCh <- nil
+	exp.Close()
+	wOut.Close()
+
+	<-r
+	// Output:
+	// [34mSent:[39m "show system uptime\n"
+	// [32mMatch for RE:[39m "testrouter#" found: ["testrouter#"] Buffer: Current time:      1998-10-13 19:45:47 UTC
+	// Time Source:       NTP CLOCK
+	// System booted:     1998-10-12 20:51:41 UTC (22:54:06 ago)
+	// Protocols started: 1998-10-13 19:33:45 UTC (00:12:02 ago)
+	// Last configured:   1998-10-13 19:33:45 UTC (00:12:02 ago) by abc
+	// 12:45PM  up 22:54, 2 users, load averages: 0.07, 0.02, 0.01
+	//
+	// testuser@testrouter#
+	// [34mSent:[39m "show system users\n"
+	// [32mMatch for RE:[39m "testrouter#" found: ["testrouter#"] Buffer: 7:30PM  up 4 days,  2:26, 2 users, load averages: 0.07, 0.02, 0.01
+	// USER     TTY FROM              LOGIN@  IDLE WHAT
+	// root     d0  -                Fri05PM 4days -csh (csh)
+	// blue   p0 level5.company.net 7:30PM     - cli
+	//
+	// testuser@testrouter#
+	// [34mSent:[39m "show version\n"
+	// [32mMatch for RE:[39m "testrouter#" found: ["testrouter#"] Buffer: Cisco IOS Software, 3600 Software (C3660-I-M), Version 12.3(4)T
+	//
+	// TAC Support: http://www.cisco.com/tac
+	// Copyright (c) 1986-2003 by Cisco Systems, Inc.
+	// Compiled Thu 18-Sep-03 15:37 by ccai
+	//
+	// ROM: System Bootstrap, Version 12.0(6r)T, RELEASE SOFTWARE (fc1)
+	// ROM:
+	//
+	// C3660-1 uptime is 1 week, 3 days, 6 hours, 41 minutes
+	// System returned to ROM by power-on
+	// System image file is "slot0:tftpboot/c3660-i-mz.123-4.T"
+	//
+	// Cisco 3660 (R527x) processor (revision 1.0) with 57344K/8192K bytes of memory.
+	// Processor board ID JAB055180FF
+	// R527x CPU at 225Mhz, Implementation 40, Rev 10.0, 2048KB L2 Cache
+	//
+	// 3660 Chassis type: ENTERPRISE
+	// 2 FastEthernet interfaces
+	// 4 Serial interfaces
+	// DRAM configuration is 64 bits wide with parity disabled.
+	// 125K bytes of NVRAM.
+	// 16384K bytes of processor board System flash (Read/Write)
+	//
+	// Flash card inserted. Reading filesystem...done.
+	// 20480K bytes of processor board PCMCIA Slot0 flash (Read/Write)
+	//
+	// Configuration register is 0x2102
+	//
+	// testrouter#
+
+}
+
 // TestSpawnGeneric tests out the generic spawn function.
 func TestSpawnGeneric(t *testing.T) {
 	fr, fw := io.Pipe()
@@ -596,7 +705,7 @@ func TestSpawnGeneric(t *testing.T) {
 		name:  "Clean test",
 		check: func() bool { return true },
 		cli:   cliMap,
-		re:    regexp.MustCompile("testrouter# "),
+		re:    regexp.MustCompile("testrouter#"),
 		fail:  false,
 	}, {
 		name: "Fail check",
@@ -604,7 +713,7 @@ func TestSpawnGeneric(t *testing.T) {
 			return false
 		},
 		cli:  cliMap,
-		re:   regexp.MustCompile("testrouter# "),
+		re:   regexp.MustCompile("testrouter#"),
 		fail: true,
 	}, {
 		name: "In nil",
@@ -933,7 +1042,7 @@ L1:
 				}
 				o, _, err := exp.Expect(re, to)
 				if err != nil {
-					t.Errorf("%s: Expect(%q,%v) failed: %v, out: %q", file, ts.Arg, to, err, o)
+					t.Errorf("%s: Expect(%q,%v) failed: %v, out: %q", file, ts.Arg(), to, err, o)
 					continue L1
 				}
 				t.Log("Scenario:", file, "expect:", ts.Arg(), " found")
