@@ -608,7 +608,6 @@ func ExampleVerbose() {
 		Wait:  func() error { return <-waitCh },
 		Close: func() error { return wIn.Close() },
 		Check: func() bool {
-			outCh <- "Original check"
 			return true
 		}}, -1, Verbose(true), VerboseWriter(os.Stdout))
 	if err != nil {
@@ -637,7 +636,12 @@ func ExampleVerbose() {
 
 	<-r
 	// Output:
-	// Sent: "show system uptime\n"Match for RE: "testrouter# " found: ["testrouter# "] Buffer: "Current time:      1998-10-13 19:45:47 UTC \nTime Source:       NTP CLOCK \nSystem booted:     1998-10-12 20:51:41 UTC (22:54:06 ago)\nProtocols started: 1998-10-13 19:33:45 UTC (00:12:02 ago)\nLast configured:   1998-10-13 19:33:45 UTC (00:12:02 ago) by abc\n12:45PM  up 22:54, 2 users, load averages: 0.07, 0.02, 0.01\n\ntestuser@testrouter# "Sent: "show version\n"Match for RE: "testrouter# " found: ["testrouter# "] Buffer: "Cisco IOS Software, 3600 Software (C3660-I-M), Version 12.3(4)T\n\nTAC Support: http://www.cisco.com/tac\nCopyright (c) 1986-2003 by Cisco Systems, Inc.\nCompiled Thu 18-Sep-03 15:37 by ccai\n\nROM: System Bootstrap, Version 12.0(6r)T, RELEASE SOFTWARE (fc1)\nROM: \n\nC3660-1 uptime is 1 week, 3 days, 6 hours, 41 minutes\nSystem returned to ROM by power-on\nSystem image file is \"slot0:tftpboot/c3660-i-mz.123-4.T\"\n\nCisco 3660 (R527x) processor (revision 1.0) with 57344K/8192K bytes of memory.\nProcessor board ID JAB055180FF\nR527x CPU at 225Mhz, Implementation 40, Rev 10.0, 2048KB L2 Cache\n\n\n3660 Chassis type: ENTERPRISE\n2 FastEthernet interfaces\n4 Serial interfaces\nDRAM configuration is 64 bits wide with parity disabled.\n125K bytes of NVRAM.\n16384K bytes of processor board System flash (Read/Write)\n\nFlash card inserted. Reading filesystem...done.\n20480K bytes of processor board PCMCIA Slot0 flash (Read/Write)\n\nConfiguration register is 0x2102\n\ntestrouter# "Sent: "show system users\n"Match for RE: "testrouter# " found: ["testrouter# "] Buffer: "7:30PM  up 4 days,  2:26, 2 users, load averages: 0.07, 0.02, 0.01\nUSER     TTY FROM              LOGIN@  IDLE WHAT\nroot     d0  -                Fri05PM 4days -csh (csh)\nblue   p0 level5.company.net 7:30PM     - cli\n\ntestuser@testrouter# "
+	// Sent: "show system uptime\n"
+	// Match for RE: "testrouter# " found: ["testrouter# "] Buffer: "Current time:      1998-10-13 19:45:47 UTC \nTime Source:       NTP CLOCK \nSystem booted:     1998-10-12 20:51:41 UTC (22:54:06 ago)\nProtocols started: 1998-10-13 19:33:45 UTC (00:12:02 ago)\nLast configured:   1998-10-13 19:33:45 UTC (00:12:02 ago) by abc\n12:45PM  up 22:54, 2 users, load averages: 0.07, 0.02, 0.01\n\ntestuser@testrouter# "
+	// Sent: "show version\n"
+	// Match for RE: "testrouter# " found: ["testrouter# "] Buffer: "Cisco IOS Software, 3600 Software (C3660-I-M), Version 12.3(4)T\n\nTAC Support: http://www.cisco.com/tac\nCopyright (c) 1986-2003 by Cisco Systems, Inc.\nCompiled Thu 18-Sep-03 15:37 by ccai\n\nROM: System Bootstrap, Version 12.0(6r)T, RELEASE SOFTWARE (fc1)\nROM: \n\nC3660-1 uptime is 1 week, 3 days, 6 hours, 41 minutes\nSystem returned to ROM by power-on\nSystem image file is \"slot0:tftpboot/c3660-i-mz.123-4.T\"\n\nCisco 3660 (R527x) processor (revision 1.0) with 57344K/8192K bytes of memory.\nProcessor board ID JAB055180FF\nR527x CPU at 225Mhz, Implementation 40, Rev 10.0, 2048KB L2 Cache\n\n\n3660 Chassis type: ENTERPRISE\n2 FastEthernet interfaces\n4 Serial interfaces\nDRAM configuration is 64 bits wide with parity disabled.\n125K bytes of NVRAM.\n16384K bytes of processor board System flash (Read/Write)\n\nFlash card inserted. Reading filesystem...done.\n20480K bytes of processor board PCMCIA Slot0 flash (Read/Write)\n\nConfiguration register is 0x2102\n\ntestrouter# "
+	// Sent: "show system users\n"
+	// Match for RE: "testrouter# " found: ["testrouter# "] Buffer: "7:30PM  up 4 days,  2:26, 2 users, load averages: 0.07, 0.02, 0.01\nUSER     TTY FROM              LOGIN@  IDLE WHAT\nroot     d0  -                Fri05PM 4days -csh (csh)\nblue   p0 level5.company.net 7:30PM     - cli\n\ntestuser@testrouter# "
 }
 
 // TestSpawnGeneric tests out the generic spawn function.

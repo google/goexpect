@@ -660,6 +660,7 @@ func (e *GExpect) ExpectSwitchCase(cs []Caser, timeout time.Duration) (string, [
 			if e.verbose {
 				vStr := fmt.Sprintf("Match for RE: %q found: %q Buffer: %q", rs[i].String(), match, tbuf.String())
 				if e.verboseWriter != nil {
+					vStr += "\n"
 					for n, bytesRead, err := 0, 0, error(nil); bytesRead < len(vStr); bytesRead += n {
 						n, err = e.verboseWriter.Write([]byte(vStr)[n:])
 						if err != nil {
@@ -1055,6 +1056,7 @@ func (e *GExpect) Send(in string) error {
 	if e.verbose {
 		vStr := fmt.Sprintf("Sent: %q", in)
 		if e.verboseWriter != nil {
+			vStr += "\n"
 			for n, bytesRead, err := 0, 0, error(nil); bytesRead < len(vStr); bytesRead += n {
 				n, err = e.verboseWriter.Write([]byte(vStr)[n:])
 				if err != nil {
