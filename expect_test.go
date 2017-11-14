@@ -636,8 +636,8 @@ func ExampleVerbose() {
 
 	<-r
 	// Output:
-	// [32mSent:[39m "show system uptime\n"
-	// [33mMatch for RE:[39m "testrouter# " found: ["testrouter# "] Buffer: Current time:      1998-10-13 19:45:47 UTC
+	// [34mSent:[39m "show system uptime\n"
+	// [32mMatch for RE:[39m "testrouter# " found: ["testrouter# "] Buffer: Current time:      1998-10-13 19:45:47 UTC
 	// Time Source:       NTP CLOCK
 	// System booted:     1998-10-12 20:51:41 UTC (22:54:06 ago)
 	// Protocols started: 1998-10-13 19:33:45 UTC (00:12:02 ago)
