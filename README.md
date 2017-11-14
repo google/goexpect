@@ -22,8 +22,15 @@ the CheckDuration `func CheckDuration(d time.Duration) Option`.
 ### Verbose
 
 The Verbose option is used to turn on/off verbose logging for Expect/Send statements.
-This option can be very usefull when troubleshooting workflows since it will og every interaction
+This option can be very useful when troubleshooting workflows since it will log every interaction
 with the device.
+
+### VerboseWriter
+
+The VerboseWriter option can be used to change where the verbose session logs are written.
+Using this option will start writing verbose output to the provided io.Writer instead of the glog default.
+
+See the ExampleVerbose code for an example of how to use this. 
 
 ### NoCheck
 
