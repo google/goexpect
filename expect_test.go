@@ -13,6 +13,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -614,8 +615,13 @@ func ExampleVerbose() {
 		return
 	}
 	re := regexp.MustCompile("testrouter#")
+	var interactCmdSorted []string
+	for k := range cliMap {
+		interactCmdSorted = append(interactCmdSorted, k)
+	}
+	sort.Strings(interactCmdSorted)
 	interact := func() {
-		for cmd := range cliMap {
+		for _, cmd := range interactCmdSorted {
 			if err := exp.Send(cmd + "\n"); err != nil {
 				fmt.Printf("exp.Send(%q) failed: %v\n", cmd+"\n", err)
 				return
