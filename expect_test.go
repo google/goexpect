@@ -547,7 +547,7 @@ func ExampleChangeCheck() {
 		fmt.Printf("SpawnGeneric failed: %v\n", err)
 		return
 	}
-	re := regexp.MustCompile("testrouter# ")
+	re := regexp.MustCompile("testrouter#")
 	interact := func() {
 		for cmd := range cliMap {
 			if err := exp.Send(cmd + "\n"); err != nil {
@@ -613,7 +613,7 @@ func ExampleVerbose() {
 		fmt.Printf("SpawnGeneric failed: %v\n", err)
 		return
 	}
-	re := regexp.MustCompile("testrouter# ")
+	re := regexp.MustCompile("testrouter#")
 	interact := func() {
 		for cmd := range cliMap {
 			if err := exp.Send(cmd + "\n"); err != nil {
@@ -699,7 +699,7 @@ func TestSpawnGeneric(t *testing.T) {
 		name:  "Clean test",
 		check: func() bool { return true },
 		cli:   cliMap,
-		re:    regexp.MustCompile("testrouter# "),
+		re:    regexp.MustCompile("testrouter#"),
 		fail:  false,
 	}, {
 		name: "Fail check",
@@ -707,7 +707,7 @@ func TestSpawnGeneric(t *testing.T) {
 			return false
 		},
 		cli:  cliMap,
-		re:   regexp.MustCompile("testrouter# "),
+		re:   regexp.MustCompile("testrouter#"),
 		fail: true,
 	}, {
 		name: "In nil",
