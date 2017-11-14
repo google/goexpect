@@ -464,7 +464,7 @@ func ExampleDebugCheck() {
 		log.Errorf("SpawnGeneric failed: %v", err)
 		return
 	}
-	re := regexp.MustCompile("testrouter# ")
+	re := regexp.MustCompile("testrouter#")
 	interact := func() {
 		for cmd := range cliMap {
 			if err := exp.Send(cmd + "\n"); err != nil {
