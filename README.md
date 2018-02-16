@@ -78,8 +78,8 @@ import (
 	"regexp"
 	"time"
 
+	expect "github.com/google/goexpect"
 	"github.com/golang/glog"
-	"github.com/google/goexpect"
 	"github.com/google/goterm/term"
 )
 
@@ -155,8 +155,8 @@ import (
 	"fmt"
 	"time"
 
+	expect "github.com/google/goexpect"
 	"github.com/golang/glog"
-	"github.com/google/goexpect"
 	"github.com/google/goterm/term"
 )
 
@@ -165,7 +165,7 @@ const (
 )
 
 var (
-	addr = flag.String("address", "", "address of telnet server")
+	addr = flag.String("address", "", "address of ftp server")
 	user = flag.String("user", "", "username to use")
 	pass = flag.String("pass", "", "password to use")
 )
@@ -241,8 +241,8 @@ import (
 
 	"google.golang.org/grpc/codes"
 
+	expect "github.com/google/goexpect"
 	"github.com/golang/glog"
-	"github.com/google/goexpect"
 	"github.com/google/goterm/term"
 )
 
@@ -251,7 +251,7 @@ const (
 )
 
 var (
-	addr  = flag.String("address", "", "address of telnet server")
+	addr  = flag.String("address", "", "address of sshd server")
 	user  = flag.String("user", "user", "username to use")
 	pass1 = flag.String("pass1", "pass1", "password to use")
 	pass2 = flag.String("pass2", "pass2", "alternate password to use")
