@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"os/exec"
 	"regexp"
 	"strconv"
@@ -17,10 +18,6 @@ import (
 	"sync"
 	"syscall"
 	"time"
-
-	stdlog "log"
-
-	log "github.com/golang/glog"
 
 	"golang.org/x/crypto/ssh"
 	"google.golang.org/grpc/codes"
@@ -105,25 +102,25 @@ func NoCheck() Option {
 // DebugCheck adds logging to the check function.
 // The check function for the spawners are called at creation/timeouts and I/O so can
 // be usable for printing current state during debugging.
-func DebugCheck(l *stdlog.Logger) Option {
-	lg := log.Infof
-	if l != nil {
-		lg = l.Printf
-	}
-	return func(e *GExpect) Option {
-		prev := e.chk
-		e.chkMu.Lock()
-		e.chk = func(ge *GExpect) bool {
-			res := prev(ge)
-			ge.mu.Lock()
-			lg("chk: %t, ge: %v", res, ge)
-			ge.mu.Unlock()
-			return res
-		}
-		e.chkMu.Unlock()
-		return changeChk(prev)
-	}
-}
+// func DebugCheck(l *stdlog.Logger) Option {
+// 	lg := log.Infof
+// 	if l != nil {
+// 		lg = l.Printf
+// 	}
+// 	return func(e *GExpect) Option {
+// 		prev := e.chk
+// 		e.chkMu.Lock()
+// 		e.chk = func(ge *GExpect) bool {
+// 			res := prev(ge)
+// 			ge.mu.Lock()
+// 			lg("chk: %t, ge: %v", res, ge)
+// 			ge.mu.Unlock()
+// 			return res
+// 		}
+// 		e.chkMu.Unlock()
+// 		return changeChk(prev)
+// 	}
+// }
 
 // ChangeCheck changes the Expect check function.
 func ChangeCheck(f func() bool) Option {
@@ -379,7 +376,7 @@ func Next() func() (Tag, *Status) {
 // LogContinue logs the message and returns the Continue Tag and status.
 func LogContinue(msg string, s *Status) func() (Tag, *Status) {
 	return func() (Tag, *Status) {
-		log.Info(msg)
+		log.Println(msg)
 		return ContinueTag, s
 	}
 }
@@ -663,12 +660,12 @@ func (e *GExpect) ExpectSwitchCase(cs []Caser, timeout time.Duration) (string, [
 					for n, bytesRead, err := 0, 0, error(nil); bytesRead < len(vStr); bytesRead += n {
 						n, err = e.verboseWriter.Write([]byte(vStr)[n:])
 						if err != nil {
-							log.Warningf("Write to Verbose Writer failed: %v", err)
+							log.Fatalf("Write to Verbose Writer failed: %v", err)
 							break
 						}
 					}
 				} else {
-					log.Infof("Match for RE: %q found: %q Buffer: %q", rs[i].String(), match, tbuf.String())
+					log.Printf("Match for RE: %q found: %q Buffer: %q", rs[i].String(), match, tbuf.String())
 				}
 			}
 
@@ -824,7 +821,7 @@ func SpawnFake(b []Batcher, timeout time.Duration, opt ...Option) (*GExpect, <-c
 	go func() {
 		res, err := srv.ExpectBatch(b, timeout)
 		if err != nil {
-			log.Warningf("ExpectBatch(%v,%v) failed: %v, out: %v", b, timeout, err, res)
+			log.Printf("ExpectBatch(%v,%v) failed: %v, out: %v", b, timeout, err, res)
 		}
 		close(done)
 	}()
@@ -990,11 +987,11 @@ func (e *GExpect) waitForSession(r chan error, wait func() error, sIn io.WriteCl
 				return
 			case sstr, ok := <-e.snd:
 				if !ok {
-					log.Infof("Send channel closed")
+					log.Println("Send channel closed")
 					return
 				}
 				if _, err := sIn.Write([]byte(sstr)); err != nil || !e.check() {
-					log.Infof("Write failed: %v", err)
+					log.Printf("Write failed: %v", err)
 					return
 				}
 			}
@@ -1007,7 +1004,7 @@ func (e *GExpect) waitForSession(r chan error, wait func() error, sIn io.WriteCl
 			nr, err := out.Read(buf)
 			if err != nil || !e.check() {
 				if err == io.EOF {
-					log.V(2).Infof("read closing down: %v", err)
+					log.Printf("read closing down: %v", err)
 					return
 				}
 				return
@@ -1058,13 +1055,13 @@ func (e *GExpect) Send(in string) error {
 			for n, bytesRead, err := 0, 0, error(nil); bytesRead < len(vStr); bytesRead += n {
 				n, err = e.verboseWriter.Write([]byte(vStr)[n:])
 				if err != nil {
-					log.Warningf("Write to Verbose Writer failed: %v", err)
+					log.Printf("Write to Verbose Writer failed: %v", err)
 					break
 				}
 				return nil
 			}
 		}
-		log.Info("Sent: %q", in)
+		log.Printf("Sent: %q", in)
 	}
 	return nil
 }
@@ -1127,7 +1124,7 @@ func (e *GExpect) read(done chan struct{}, ptySync *sync.WaitGroup) {
 		nr, err := e.pty.Master.Read(buf)
 		if err != nil || !e.check() {
 			if err == io.EOF {
-				log.V(2).Infof("read closing down: %v", err)
+				log.Printf("read closing down: %v", err)
 				return
 			}
 			return
@@ -1156,7 +1153,7 @@ func (e *GExpect) send(done chan struct{}, ptySync *sync.WaitGroup) {
 				return
 			}
 			if _, err := e.pty.Master.Write([]byte(sstr)); err != nil || !e.check() {
-				log.Infof("send failed: %v", err)
+				log.Printf("send failed: %v", err)
 				break
 			}
 		}
