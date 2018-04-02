@@ -1,5 +1,9 @@
 This package is an implementation of [Expect](https://en.wikipedia.org/wiki/Expect) in [Go](golang.org).
 
+Replaced glog with logrus
+
+## TODO
+ - fix tests
 
 ## Features:
  - Spawning and controlling local processes with real PTYs.
