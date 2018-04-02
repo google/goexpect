@@ -22,10 +22,10 @@ import (
 
 	stdlog "log"
 
-	"google.golang.org/grpc/codes"
+	"github.com/wilbeibi/goexpect/codes"
 
-	log "github.com/golang/glog"
 	term "github.com/google/goterm/term"
+	log "github.com/sirupsen/logrus"
 
 	"golang.org/x/crypto/ssh"
 )

@@ -20,10 +20,10 @@ import (
 
 	stdlog "log"
 
-	log "github.com/golang/glog"
+	log "github.com/sirupsen/logrus"
 
+	"github.com/wilbeibi/goexpect/codes"
 	"golang.org/x/crypto/ssh"
-	"google.golang.org/grpc/codes"
 
 	"github.com/google/goterm/term"
 )
@@ -990,7 +990,7 @@ func (e *GExpect) waitForSession(r chan error, wait func() error, sIn io.WriteCl
 				return
 			case sstr, ok := <-e.snd:
 				if !ok {
-					log.Infof("Send channel closed")
+					log.Info("Send channel closed")
 					return
 				}
 				if _, err := sIn.Write([]byte(sstr)); err != nil || !e.check() {
@@ -1007,7 +1007,7 @@ func (e *GExpect) waitForSession(r chan error, wait func() error, sIn io.WriteCl
 			nr, err := out.Read(buf)
 			if err != nil || !e.check() {
 				if err == io.EOF {
-					log.V(2).Infof("read closing down: %v", err)
+					log.Infof("read closing down: %v", err)
 					return
 				}
 				return
@@ -1064,7 +1064,7 @@ func (e *GExpect) Send(in string) error {
 				return nil
 			}
 		}
-		log.Info("Sent: %q", in)
+		log.Infof("Sent: %q", in)
 	}
 	return nil
 }
@@ -1127,7 +1127,7 @@ func (e *GExpect) read(done chan struct{}, ptySync *sync.WaitGroup) {
 		nr, err := e.pty.Master.Read(buf)
 		if err != nil || !e.check() {
 			if err == io.EOF {
-				log.V(2).Infof("read closing down: %v", err)
+				log.Infof("read closing down: %v", err)
 				return
 			}
 			return
