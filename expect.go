@@ -854,7 +854,7 @@ func SpawnFake(b []Batcher, timeout time.Duration, opt ...Option) (*GExpect, <-c
 
 // Spawn starts a new process and collects the output. The error channel returns the result of the
 // command Spawned when it finishes.
-func Spawn(command string, timeout time.Duration, opts ...Option) (*GExpect, <-chan error, error) {
+func Spawn(command []string, timeout time.Duration, opts ...Option) (*GExpect, <-chan error, error) {
 	pty, err := term.OpenPTY()
 	if err != nil {
 		return nil, nil, err
@@ -867,8 +867,7 @@ func Spawn(command string, timeout time.Duration, opts ...Option) (*GExpect, <-c
 		timeout = DefaultTimeout
 	}
 	// Get the command up and running
-	args := strings.Fields(command)
-	cmd := exec.Command(args[0], args[1:]...)
+	cmd := exec.Command(command[0], command[1:]...)
 	// This ties the commands Stdin,Stdout & Stderr to the virtual terminal we created
 	cmd.Stdin, cmd.Stdout, cmd.Stderr = pty.Slave, pty.Slave, pty.Slave
 	// New process needs to be the process leader and control of a tty
@@ -1073,7 +1072,7 @@ func (e *GExpect) Send(in string) error {
 				return nil
 			}
 		}
-		log.Info("Sent: %q", in)
+		log.Infof("Sent: %q", in)
 	}
 	return nil
 }

@@ -923,22 +923,22 @@ func TestSpawn(t *testing.T) {
 	tests := []struct {
 		name   string
 		fail   bool
-		cmd    string
+		cmd    []string
 		cmdErr bool
 	}{{
 		name: "Spawn non executable fail",
 		fail: true,
-		cmd:  "/etc/hosts",
+		cmd:  []string{"/etc/hosts"},
 	}, {
 		name: "Nil return code",
-		cmd:  "/bin/true",
+		cmd:  []string{"/bin/true"},
 	}, {
 		name:   "Non nil return code",
-		cmd:    "/bin/false",
+		cmd:    []string{"/bin/false"},
 		cmdErr: true,
 	}, {
 		name:   "Spawn cat",
-		cmd:    "/bin/cat",
+		cmd:    []string{"/bin/cat"},
 		cmdErr: true,
 	}}
 
@@ -1026,7 +1026,7 @@ L1:
 			continue
 		}
 		// Spawn the testfile
-		exp, r, err := Spawn(f, 0)
+		exp, r, err := Spawn([]string{f}, 0)
 		if err != nil {
 			t.Errorf("%s: Spawn(%q,0) failed: %v", file, file, err)
 			continue
@@ -1102,7 +1102,7 @@ func TestBatchScenarios(t *testing.T) {
 				batch = append(batch, &BCas{tst.Cases()})
 			}
 		}
-		exp, r, err := Spawn(f, 30*time.Second, Verbose(true))
+		exp, r, err := Spawn([]string{f}, 30*time.Second, Verbose(true))
 		if err != nil {
 			t.Errorf("%s: Spawn(%q) failed: %v", file, file, err)
 			continue
