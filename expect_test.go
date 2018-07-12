@@ -923,22 +923,22 @@ func TestSpawn(t *testing.T) {
 	tests := []struct {
 		name   string
 		fail   bool
-		cmd    []string
+		cmd    string
 		cmdErr bool
 	}{{
 		name: "Spawn non executable fail",
 		fail: true,
-		cmd:  []string{"/etc/hosts"},
+		cmd:  "/etc/hosts",
 	}, {
 		name: "Nil return code",
-		cmd:  []string{"/bin/true"},
+		cmd:  "/bin/true",
 	}, {
 		name:   "Non nil return code",
-		cmd:    []string{"/bin/false"},
+		cmd:    "/bin/false",
 		cmdErr: true,
 	}, {
 		name:   "Spawn cat",
-		cmd:    []string{"/bin/cat"},
+		cmd:    "/bin/cat",
 		cmdErr: true,
 	}}
 
@@ -961,6 +961,29 @@ func TestSpawn(t *testing.T) {
 			continue
 		}
 	}
+}
+
+// TestSpawnWithArgs tests that arguments with embedded spaces works.
+func TestSpawnWithArgs(t *testing.T) {
+	args := []string{"echo", "a   b"}
+	e, _, err := SpawnWithArgs(args, 400*time.Millisecond)
+	if err != nil {
+		t.Errorf("Spawn(echo 'a   b') failed: %v", err)
+	}
+
+	// Expected to match
+	_, _, err = e.Expect(regexp.MustCompile("a   b"), 400*time.Millisecond)
+	if err != nil {
+		t.Errorf("Expect(a   b) failed: %v", err)
+	}
+
+	// Expected to not match
+	_, _, err = e.Expect(regexp.MustCompile("a b"), 400*time.Millisecond)
+	if err == nil {
+		t.Error("Expect(a b) to not match")
+	}
+
+	e.Close()
 }
 
 // TestExpect tests the Expect function.
@@ -1026,7 +1049,7 @@ L1:
 			continue
 		}
 		// Spawn the testfile
-		exp, r, err := Spawn([]string{f}, 0)
+		exp, r, err := Spawn(f, 0)
 		if err != nil {
 			t.Errorf("%s: Spawn(%q,0) failed: %v", file, file, err)
 			continue
@@ -1102,7 +1125,7 @@ func TestBatchScenarios(t *testing.T) {
 				batch = append(batch, &BCas{tst.Cases()})
 			}
 		}
-		exp, r, err := Spawn([]string{f}, 30*time.Second, Verbose(true))
+		exp, r, err := Spawn(f, 30*time.Second, Verbose(true))
 		if err != nil {
 			t.Errorf("%s: Spawn(%q) failed: %v", file, file, err)
 			continue
