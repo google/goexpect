@@ -963,6 +963,29 @@ func TestSpawn(t *testing.T) {
 	}
 }
 
+// TestSpawnWithArgs tests that arguments with embedded spaces works.
+func TestSpawnWithArgs(t *testing.T) {
+	args := []string{"echo", "a   b"}
+	e, _, err := SpawnWithArgs(args, 400*time.Millisecond)
+	if err != nil {
+		t.Errorf("Spawn(echo 'a   b') failed: %v", err)
+	}
+
+	// Expected to match
+	_, _, err = e.Expect(regexp.MustCompile("a   b"), 400*time.Millisecond)
+	if err != nil {
+		t.Errorf("Expect(a   b) failed: %v", err)
+	}
+
+	// Expected to not match
+	_, _, err = e.Expect(regexp.MustCompile("a b"), 400*time.Millisecond)
+	if err == nil {
+		t.Error("Expect(a b) to not match")
+	}
+
+	e.Close()
+}
+
 // TestExpect tests the Expect function.
 func TestExpect(t *testing.T) {
 	tests := []struct {
