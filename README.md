@@ -230,7 +230,7 @@ Interaction:
 + router#
 ```
 
-*ssh_example.to*
+*ssh_example.go*
 
 ```
 package main
