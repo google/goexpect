@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net"
 	"os"
 	"path/filepath"
@@ -689,6 +690,39 @@ func ExampleVerbose() {
 	//
 	// testrouter#
 
+}
+
+// TestTee tests the Tee option can write to a file.
+func TestTee(t *testing.T) {
+	// Create a temporary file to tee output.
+	f, err := ioutil.TempFile("", "goexpect-tee")
+	if err != nil {
+		t.Fatalf("Could not create temporary file: %v", err)
+	}
+	fileName := f.Name()
+	defer os.Remove(fileName)
+
+	// Send abcdef to cat 4096 times.
+	input := "abcdef\n"
+	e, _, err := Spawn("cat", 400*time.Millisecond, Tee(f), CheckDuration(1*time.Millisecond))
+	for i := 0; i < 4096; i++ {
+		e.Send(input)
+		re := regexp.MustCompile(input)
+		if _, _, err = e.Expect(re, 400*time.Millisecond); err != nil {
+			t.Errorf("Expect(%q) failed: %v", input, err)
+		}
+	}
+	e.Close()
+
+	// Check the tee'd output.
+	got, err := ioutil.ReadFile(fileName)
+	if err != nil {
+		t.Fatalf("Could not read temporary file: %v", err)
+	}
+	want := strings.Repeat(input, 4096)
+	if string(got) != want {
+		t.Errorf("tee output mismatch, got: %q want: %q", got, want)
+	}
 }
 
 // TestSpawnGeneric tests out the generic spawn function.
