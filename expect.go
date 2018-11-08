@@ -1153,30 +1153,32 @@ func (e *GExpect) read(done chan struct{}, ptySync *sync.WaitGroup) {
 	buf := make([]byte, bufferSize)
 	for {
 		nr, err := e.pty.Master.Read(buf)
-		if err != nil || !e.check() {
+		if nr > 0 {
+			// Tee output to writer
+			if e.teeWriter != nil {
+				e.teeWriter.Write(buf[:nr])
+			}
+			// Add to buffer
+			e.mu.Lock()
+			e.out.Write(buf[:nr])
+			e.mu.Unlock()
+			// Ping Expect function
+			select {
+			case e.rcv <- struct{}{}:
+			default:
+			}
+		}
+		if err != nil || (nr == 0 && err == nil) {
 			if e.teeWriter != nil {
 				e.teeWriter.Close()
 			}
-			if err == io.EOF {
+			if err == io.EOF && e.check() {
 				if e.verbose {
 					log.Printf("read closing down: %v", err)
 				}
 				return
 			}
 			return
-		}
-		// Tee output to writer
-		if e.teeWriter != nil {
-			e.teeWriter.Write(buf[:nr])
-		}
-		// Add to buffer
-		e.mu.Lock()
-		e.out.Write(buf[:nr])
-		e.mu.Unlock()
-		// Ping Expect function
-		select {
-		case e.rcv <- struct{}{}:
-		default:
 		}
 	}
 }
