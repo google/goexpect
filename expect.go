@@ -170,11 +170,11 @@ const (
 )
 
 // TimeoutError is the error returned by all Expect functions upon timer expiry.
-type TimeoutError int
+type TimeoutError time.Duration
 
 // Error implements the Error interface.
 func (t TimeoutError) Error() string {
-	return fmt.Sprintf("expect: timer expired after %d seconds", time.Duration(t)/time.Second)
+	return fmt.Sprintf("expect: timer expired after %s", time.Duration(t))
 }
 
 // BatchRes returned from ExpectBatch for every Expect command executed.
