@@ -601,7 +601,7 @@ func (e *GExpect) ExpectBatch(batch []Batcher, timeout time.Duration) ([]BatchRe
 	return res, nil
 }
 
-func (e *GExpect) check() bool {
+func (e *GExpect) checkAlive() bool {
 	e.chkMu.RLock()
 	defer e.chkMu.RUnlock()
 	return e.chk(e)
@@ -729,7 +729,7 @@ func (e *GExpect) ExpectSwitchCase(cs []Caser, timeout time.Duration) (string, [
 			}
 			return o, match, i, s.Err()
 		}
-		if !e.check() {
+		if !e.checkAlive() {
 			nr, err := io.Copy(&tbuf, e)
 			if err != nil {
 				return tbuf.String(), nil, -1, fmt.Errorf("io.Copy failed: %v", err)
@@ -1019,7 +1019,7 @@ func (e *GExpect) waitForSession(r chan error, wait func() error, sIn io.WriteCl
 					log.Printf("Send channel closed")
 					return
 				}
-				if _, err := sIn.Write([]byte(sstr)); err != nil || !e.check() {
+				if _, err := sIn.Write([]byte(sstr)); err != nil || !e.checkAlive() {
 					log.Printf("Write failed: %v", err)
 					return
 				}
@@ -1031,7 +1031,7 @@ func (e *GExpect) waitForSession(r chan error, wait func() error, sIn io.WriteCl
 		buf := make([]byte, bufferSize)
 		for {
 			nr, err := out.Read(buf)
-			if err != nil || !e.check() {
+			if err != nil || !e.checkAlive() {
 				if err == io.EOF {
 					if e.verbose {
 						log.Printf("read closing down: %v", err)
@@ -1076,7 +1076,7 @@ func (e *GExpect) Read(p []byte) (nr int, err error) {
 
 // Send sends a string to spawned process.
 func (e *GExpect) Send(in string) error {
-	if !e.check() {
+	if !e.checkAlive() {
 		return errors.New("expect: Process not running")
 	}
 	e.snd <- in
@@ -1172,11 +1172,8 @@ func (e *GExpect) read(done chan struct{}, ptySync *sync.WaitGroup) {
 			if e.teeWriter != nil {
 				e.teeWriter.Close()
 			}
-			if err == io.EOF && e.check() {
-				if e.verbose {
-					log.Printf("read closing down: %v", err)
-				}
-				return
+			if err == io.EOF && e.checkAlive() && e.verbose {
+				log.Printf("read closing down: %v", err)
 			}
 			return
 		}
@@ -1194,7 +1191,7 @@ func (e *GExpect) send(done chan struct{}, ptySync *sync.WaitGroup) {
 			if !ok {
 				return
 			}
-			if _, err := e.pty.Master.Write([]byte(sstr)); err != nil || !e.check() {
+			if _, err := e.pty.Master.Write([]byte(sstr)); err != nil || !e.checkAlive() {
 				log.Printf("send failed: %v", err)
 				break
 			}
