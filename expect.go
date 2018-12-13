@@ -159,6 +159,15 @@ func SetEnv(env []string) Option {
 	}
 }
 
+// SetSysProcAttr sets the SysProcAttr syscall values for the spawned process.
+func SetSysProcAttr(args *syscall.SysProcAttr) Option {
+	return func(e *GExpect) Option {
+		prev := e.cmd.SysProcAttr
+		e.cmd.SysProcAttr = args
+		return SetSysProcAttr(prev)
+	}
+}
+
 // BatchCommands.
 const (
 	// BatchSend for invoking Send in a batch
