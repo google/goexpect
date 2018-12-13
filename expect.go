@@ -1164,7 +1164,7 @@ func (e *GExpect) read(done chan struct{}, ptySync *sync.WaitGroup) {
 	buf := make([]byte, bufferSize)
 	for {
 		nr, err := e.pty.Master.Read(buf)
-		if err != nil || !e.check() {
+		if err != nil && !e.check() {
 			if e.teeWriter != nil {
 				e.teeWriter.Close()
 			}
