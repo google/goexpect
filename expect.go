@@ -159,7 +159,8 @@ func SetEnv(env []string) Option {
 	}
 }
 
-// SetSysProcAttr sets the SysProcAttr syscall values for the spawned process.
+// SetSysProcAttr sets the SysProcAttr syscall values for the spawned process. 
+// Because this modifies cmd, it will only work with the process spawners and not effect the GExpect option method.
 func SetSysProcAttr(args *syscall.SysProcAttr) Option {
 	return func(e *GExpect) Option {
 		prev := e.cmd.SysProcAttr
