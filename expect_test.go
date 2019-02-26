@@ -821,6 +821,48 @@ func TestSpawnGeneric(t *testing.T) {
 	}
 }
 
+// TestSendTimeout tests that Send command can fail on timeout.
+func TestSendTimeout(t *testing.T) {
+	t.Log("Running test: TestSendTimeout")
+	rIn, wIn := io.Pipe()
+	rOut, wOut := io.Pipe()
+	waitCh := make(chan error)
+	outCh := make(chan string)
+	defer close(outCh)
+
+	go fakeCli(cliMap, rIn, wOut)
+	exp, r, err := SpawnGeneric(
+		&GenOptions{
+			In:    wIn,
+			Out:   rOut,
+			Wait:  func() error { return <-waitCh },
+			Close: func() error { return nil },
+			Check: func() bool { return true },
+		}, -1, SendTimeout(time.Second))
+	if err != nil {
+		t.Fatalf("SpawnGeneric(_, %d , SendTimeout(%v)) failed: %v", -1, time.Second, err)
+	}
+
+	if err := wIn.Close(); err != nil {
+		t.Fatalf("wIn.Close() failed: %v", err)
+	}
+
+	
+	if err := exp.Send("test" + "\n"); err != nil {
+		t.Fatalf("Send(%q) command failed: %v", "test" + "\n", err)
+	}
+
+	if err := exp.Send("test" + "\n"); err == nil {
+		t.Errorf("Send(%q) = %t want: %t, err: %v", "test" + "\n", (err != nil), true, err)
+	}
+	waitCh <- nil
+	exp.Close()
+	wOut.Close()
+
+	<-r
+}
+
+
 // TestSpawnSSHPTY tests the SSHPTY spawner.
 func TestSpawnSSHPTY(t *testing.T) {
 	tests := []struct {
