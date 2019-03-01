@@ -714,7 +714,10 @@ func (e *GExpect) ExpectSwitchCase(cs []Caser, timeout time.Duration) (string, [
 			}
 
 			// Clear the buffer directly after match.
-			o := tbuf.String()
+			tbufString := tbuf.String()
+			matchIndex := rs[i].FindStringIndex(tbufString)
+			o := tbufString[0:matchIndex[1]]
+			e.ReturnUnmatchedSuffix(tbufString[matchIndex[1]:])
 			tbuf.Reset()
 
 			st := c.String()
@@ -1094,6 +1097,15 @@ func (e *GExpect) Read(p []byte) (nr int, err error) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	return e.out.Read(p)
+}
+
+// Return the unmatched suffix back to the buffer so that it can be matched again
+func (e *GExpect) ReturnUnmatchedSuffix(p string) {
+    e.mu.Lock()
+    defer e.mu.Unlock()
+    newBuffer := bytes.NewBufferString(p)
+    newBuffer.WriteString(e.out.String())
+    e.out = *newBuffer
 }
 
 // Send sends a string to spawned process.
