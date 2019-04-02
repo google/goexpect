@@ -1096,7 +1096,7 @@ Router42>`},
 	}}
 
 	for _, tst := range tests {
-		exp, _, err := SpawnFake(tst.srv, tst.timeout)
+		exp, _, err := SpawnFake(tst.srv, tst.timeout, PartialMatch(true))
 		if err != nil {
 			if !tst.fail {
 				t.Errorf("%s: SpawnFake failed: %v", tst.name, err)

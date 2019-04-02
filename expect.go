@@ -179,6 +179,15 @@ func SetSysProcAttr(args *syscall.SysProcAttr) Option {
 	}
 }
 
+// PartialMatch enables/disables the returning of unmatched buffer so that consecutive expect call works.
+func PartialMatch(v bool) Option {
+	return func(e *GExpect) Option {
+		prev := e.partialMatch
+		e.partialMatch = v
+		return PartialMatch(prev)
+	}
+}
+
 // BatchCommands.
 const (
 	// BatchSend for invoking Send in a batch
@@ -559,6 +568,8 @@ type GExpect struct {
 	verboseWriter io.Writer
 	// teeWriter receives a duplicate of the spawned process's output when set.
 	teeWriter io.WriteCloser
+	// PartialMatch enables the returning of unmatched buffer so that consecutive expect call works.
+	partialMatch bool
 
 	// mu protects the output buffer. It must be held for any operations on out.
 	mu  sync.Mutex
@@ -713,11 +724,16 @@ func (e *GExpect) ExpectSwitchCase(cs []Caser, timeout time.Duration) (string, [
 				}
 			}
 
-			// Return the part of the buffer that is not matched by the regular expression so that the next expect call will be able to match it.
 			tbufString := tbuf.String()
-			matchIndex := rs[i].FindStringIndex(tbufString)
-			o := tbufString[0:matchIndex[1]]
-			e.returnUnmatchedSuffix(tbufString[matchIndex[1]:])
+			o := tbufString
+
+			if e.partialMatch {
+				// Return the part of the buffer that is not matched by the regular expression so that the next expect call will be able to match it.
+				matchIndex := rs[i].FindStringIndex(tbufString)
+				o = tbufString[0:matchIndex[1]]
+				e.returnUnmatchedSuffix(tbufString[matchIndex[1]:])
+			} 
+
 			tbuf.Reset()
 
 			st := c.String()
