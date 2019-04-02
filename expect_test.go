@@ -1070,6 +1070,7 @@ func TestExpect(t *testing.T) {
 		srv     []Batcher
 		timeout time.Duration
 		re      *regexp.Regexp
+		re2     *regexp.Regexp
 	}{{
 		name: "Match prompt",
 		srv: []Batcher{
@@ -1078,7 +1079,8 @@ Pretty please don't hack my chassis
 
 router1> `},
 		},
-		re:      regexp.MustCompile("router1>"),
+		re:      regexp.MustCompile("hack"),
+		re2:     regexp.MustCompile("router1>"),
 		timeout: 2 * time.Second,
 	}, {
 		name: "Match fail",
@@ -1094,7 +1096,7 @@ Router42>`},
 	}}
 
 	for _, tst := range tests {
-		exp, _, err := SpawnFake(tst.srv, tst.timeout)
+		exp, _, err := SpawnFake(tst.srv, tst.timeout, PartialMatch(true))
 		if err != nil {
 			if !tst.fail {
 				t.Errorf("%s: SpawnFake failed: %v", tst.name, err)
@@ -1106,6 +1108,11 @@ Router42>`},
 			t.Errorf("%s: Expect(%q,%v) = %t want: %t , err: %v, out: %q", tst.name, tst.re.String(), tst.timeout, got, want, err, out)
 			continue
 		}
+        out, _, err = exp.Expect(tst.re2, tst.timeout)
+        if got, want := err != nil, tst.fail; got != want {
+            t.Errorf("%s: Expect(%q,%v) = %t want: %t , err: %v, out: %q", tst.name, tst.re.String(), tst.timeout, got, want, err, out)
+            continue
+        }
 	}
 }
 
