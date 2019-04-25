@@ -725,6 +725,45 @@ func TestTee(t *testing.T) {
 	}
 }
 
+// TestTee_SpawnFake tests the Tee option can operate on SpawnFake.
+func TestTee_SpawnFake(t *testing.T) {
+	// Create a temporary file to tee output.
+	f, err := ioutil.TempFile("", "goexpect-tee")
+	if err != nil {
+		t.Fatalf("Could not create temporary file: %v", err)
+	}
+	fileName := f.Name()
+	defer os.Remove(fileName)
+
+	msg := `
+Pretty please don't hack my chassis
+
+router1> `
+	srv := []Batcher{
+		&BSnd{msg},
+	}
+	re := regexp.MustCompile("router1>")
+	timeout := 2 * time.Second
+	exp, _, err := SpawnFake(srv, timeout, Tee(f))
+	if err != nil {
+		t.Fatalf("SpawnFake failed: %v", err)
+	}
+	out, _, err := exp.Expect(re, timeout)
+	if err != nil {
+		t.Fatalf("Expect(%q,%v), err: %v, out: %q", re.String(), timeout, err, out)
+	}
+	exp.Close()
+
+	// Check the tee'd output.
+	got, err := ioutil.ReadFile(fileName)
+	if err != nil {
+		t.Fatalf("Could not read temporary file: %v", err)
+	}
+	if string(got) != msg {
+		t.Errorf("tee output mismatch, got: %q want: %q", got, msg)
+	}
+}
+
 // TestSpawnGeneric tests out the generic spawn function.
 func TestSpawnGeneric(t *testing.T) {
 	fr, fw := io.Pipe()
