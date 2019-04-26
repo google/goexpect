@@ -744,7 +744,7 @@ router1> `
 	}
 	re := regexp.MustCompile("router1>")
 	timeout := 2 * time.Second
-	exp, _, err := SpawnFake(srv, timeout, Tee(f))
+	exp, endch, err := SpawnFake(srv, timeout, Tee(f))
 	if err != nil {
 		t.Fatalf("SpawnFake failed: %v", err)
 	}
@@ -753,6 +753,8 @@ router1> `
 		t.Fatalf("Expect(%q,%v), err: %v, out: %q", re.String(), timeout, err, out)
 	}
 	exp.Close()
+	// wait for end
+	<-endch
 
 	// Check the tee'd output.
 	got, err := ioutil.ReadFile(fileName)
