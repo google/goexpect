@@ -803,7 +803,7 @@ func (e *GExpect) ExpectSwitchCase(cs []Caser, timeout time.Duration) (string, [
 		    	if err != nil {
 				return tbuf.String(), nil, -1, fmt.Errorf("io.Copy failed: %v", err)
 			}
-			// timer shoud be reset when new out put is available.
+			// timer shoud be reset when new output is available.
 			if nr > 0 {
 				timer = time.NewTimer(timeout)
 			}
