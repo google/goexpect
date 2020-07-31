@@ -1162,8 +1162,9 @@ func (e *GExpect) Send(in string) error {
 			if err != nil {
 				log.Printf("Write to Verbose Writer failed: %v", err)
 			}
+		} else {
+			log.Printf("Sent: %q", in)
 		}
-		log.Printf("Sent: %q", in)
 	}
 
 	return nil
