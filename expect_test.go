@@ -1281,32 +1281,31 @@ func TestSendSignal(t *testing.T) {
 	}}
 
 	for _, tst := range tests {
-		exp, r, err := Spawn(tst.cmd, 30*time.Second, Verbose(true))
-		if got, want := (err != nil), tst.fail; got != want {
-			t.Errorf("%s: Spawn(%q, %v, _) = %t want: %t , err: %v", tst.name, tst.cmd, 30*time.Second, got, want, err)
-			continue
-		}
-		if _, _, err := exp.Expect(regexp.MustCompile("Waiting for signal"), time.Second*10); err != nil {
-			t.Errorf("%s: ...", tst.name)
-			continue
-		}
-		if err := exp.SendSignal(tst.sig); err != nil {
-			t.Errorf("%s: exp.SendSignal(%v) failed: %v", tst.name, tst.sig, err)
-			continue
-		}
+		t.Run(tst.name, func(t *testing.T) {
+			exp, r, err := Spawn(tst.cmd, 30*time.Second, Verbose(true))
+			if got, want := (err != nil), tst.fail; got != want {
+				t.Fatalf("%s: Spawn(%q, %v, _) = %t want: %t , err: %v", tst.name, tst.cmd, 30*time.Second, got, want, err)
+			}
+			defer func() {
+				exp.Close()
+				<-r
+			}()
+			if _, _, err := exp.Expect(signalsInstalled, time.Second*10); err != nil {
+				t.Fatalf("%s: ...", tst.name)
+			}
+			if err := exp.SendSignal(tst.sig); err != nil {
+				t.Fatalf("%s: exp.SendSignal(%v) failed: %v", tst.name, tst.sig, err)
+			}
 
-		reExpect, err := regexp.Compile(tst.expect)
-		if err != nil {
-			t.Errorf("%s: regexp.Compile(%q) failed: %v", tst.name, tst.expect, err)
-			continue
-		}
+			reExpect, err := regexp.Compile(tst.expect)
+			if err != nil {
+				t.Fatalf("%s: regexp.Compile(%q) failed: %v", tst.name, tst.expect, err)
+			}
 
-		if match, buf, err := exp.Expect(tst.expect, time.Second*2); err != nil {
-			t.Errorf("%s: exp.Expect(%q, %v) failed: %v, match: %s, buf: %s", tst.name, tst.expect, time.Second*2, err, match, buf)
-			continue
-		}
-		exp.Close()
-		<-r
+			if match, buf, err := exp.Expect(reExpect, time.Second*2); err != nil {
+				t.Errorf("%s: exp.Expect(%q, %v) failed: %v, match: %s, buf: %s", tst.name, tst.expect, time.Second*2, err, match, buf)
+			}
+		})
 	}
 }
 
