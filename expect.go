@@ -646,7 +646,7 @@ func (e *GExpect) check() bool {
 // Only works on Process Expecters.
 func (e *GExpect) SendSignal(sig os.Signal) error {
 	if e.cmd == nil {
-		return status.Errorf(codes.NotFound, "not a process Expecter")
+		return status.Errorf(codes.NotImplemented, "only process Expecters supported")
 	}
 	return e.cmd.Process.Signal(sig)
 }
