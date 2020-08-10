@@ -1270,14 +1270,17 @@ func TestSendSignal(t *testing.T) {
 		fail   bool
 		cmd    string
 		sig    os.Signal
-		wait   time.Duration
 		expect string
 	}{{
 		name:   "Sig USR1",
 		cmd:    "testdata/traptest.sh",
 		sig:    syscall.SIGUSR1,
-		wait:   time.Second * 2,
 		expect: "USR1",
+	}, {
+		name:   "Sig HUP",
+		cmd:    "testdata/traptest.sh",
+		sig:    syscall.SIGHUP,
+		expect: "HUP",
 	}}
 
 	for _, tst := range tests {
@@ -1290,8 +1293,8 @@ func TestSendSignal(t *testing.T) {
 				exp.Close()
 				<-r
 			}()
-			if _, _, err := exp.Expect(signalsInstalled, time.Second*10); err != nil {
-				t.Fatalf("%s: ...", tst.name)
+			if match, buf, err := exp.Expect(signalsInstalled, time.Second*10); err != nil {
+				t.Fatalf("%s: exp.Expect(%q, %v) failed: %v, match: %s, buf: %s", tst.name, tst.expect, time.Second*10, err, match, buf)
 			}
 			if err := exp.SendSignal(tst.sig); err != nil {
 				t.Fatalf("%s: exp.SendSignal(%v) failed: %v", tst.name, tst.sig, err)
@@ -1303,7 +1306,7 @@ func TestSendSignal(t *testing.T) {
 			}
 
 			if match, buf, err := exp.Expect(reExpect, time.Second*2); err != nil {
-				t.Errorf("%s: exp.Expect(%q, %v) failed: %v, match: %s, buf: %s", tst.name, tst.expect, time.Second*2, err, match, buf)
+				t.Fatalf("%s: exp.Expect(%q, %v) failed: %v, match: %s, buf: %s", tst.name, tst.expect, time.Second*2, err, match, buf)
 			}
 		})
 	}
