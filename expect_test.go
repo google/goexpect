@@ -1312,6 +1312,39 @@ func TestSendSignal(t *testing.T) {
 	}
 }
 
+// ExampleGExpect_SendSignal shows the usage of the SendSignal call.
+func ExampleGExpect_SendSignal() {
+	exp, r, err := Spawn("testdata/traptest.sh", 30*time.Second)
+	if err != nil {
+		fmt.Printf("Spawn failed: %v\n", err)
+		return
+	}
+	if match, buf, err := exp.Expect(signalsInstalled, time.Second*20); err != nil {
+		fmt.Printf("exp.Expect failed, match: %v, buf: %v, err: %v", match, buf, err)
+		return
+	}
+
+	if err := exp.SendSignal(syscall.SIGUSR1); err != nil {
+		fmt.Printf("exp.SendSignal failed: %v", err)
+		return
+	}
+
+	reExpect, err := regexp.Compile("Sig USR1")
+	if err != nil {
+		fmt.Printf("regexp.Compile(%q) failed: %v", "Sig USR1", err)
+		return
+	}
+
+	match, buf, err := exp.Expect(reExpect, time.Second*20)
+	if err != nil {
+		fmt.Printf("exp.Expect failed, match: %v, buf: %v, err: %v", match, buf, err)
+		return
+	}
+	fmt.Println(match)
+	<-r
+	// Output: Sig USR1
+}
+
 var tMap map[string][]Batcher
 
 // buildTest Reads the sends and expected outputs from the testfiles eg.
