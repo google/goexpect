@@ -198,6 +198,8 @@ const (
 	BatchExpect
 	// BatchSwitchCase for invoking ExpectSwitchCase in a batch
 	BatchSwitchCase
+	// BatchSendSignal for invoking SendSignal in a batch.
+	BatchSendSignal
 )
 
 // TimeoutError is the error returned by all Expect functions upon timer expiry.
@@ -243,6 +245,32 @@ type Batcher interface {
 	Timeout() time.Duration
 	// Cases returns the Caser structure for SwitchCase commands.
 	Cases() []Caser
+}
+
+// BSig implements the Batcher interface for SendSignal commands.
+type BSig struct {
+	// S contains the signal.
+	S syscall.Signal
+}
+
+// Cmd returns the SendSignal command (BatchSendSignal).
+func (bs *BSig) Cmd() int {
+	return BatchSendSignal
+}
+
+// Arg returns the signal integer.
+func (bs *BSig) Arg() string {
+	return strconv.Itoa(int(bs.S))
+}
+
+// Timeout always returns 0 for BSig.
+func (bs *BSig) Timeout() time.Duration {
+	return time.Duration(0)
+}
+
+// Cases always returns nil for BSig.
+func (bs *BSig) Cases() []Caser {
+	return nil
 }
 
 // BExp implements the Batcher interface for Expect commands using the default timeout.
@@ -627,6 +655,14 @@ func (e *GExpect) ExpectBatch(batch []Batcher, timeout time.Duration) ([]BatchRe
 			out, match, _, err := e.ExpectSwitchCase(b.Cases(), to)
 			res = append(res, BatchRes{i, out, match})
 			if err != nil {
+				return res, err
+			}
+		case BatchSendSignal:
+			sigNr, err := strconv.Atoi(b.Arg())
+			if err != nil {
+				return res, err
+			}
+			if err := e.SendSignal(syscall.Signal(sigNr)); err != nil {
 				return res, err
 			}
 		default:
