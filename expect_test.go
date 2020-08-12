@@ -18,6 +18,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"syscall"
 	"testing"
 	"time"
 
@@ -888,13 +889,12 @@ func TestSendTimeout(t *testing.T) {
 		t.Fatalf("wIn.Close() failed: %v", err)
 	}
 
-	
 	if err := exp.Send("test" + "\n"); err != nil {
-		t.Fatalf("Send(%q) command failed: %v", "test" + "\n", err)
+		t.Fatalf("Send(%q) command failed: %v", "test"+"\n", err)
 	}
 
 	if err := exp.Send("test" + "\n"); err == nil {
-		t.Errorf("Send(%q) = %t want: %t, err: %v", "test" + "\n", (err != nil), true, err)
+		t.Errorf("Send(%q) = %t want: %t, err: %v", "test"+"\n", (err != nil), true, err)
 	}
 	waitCh <- nil
 	exp.Close()
@@ -902,7 +902,6 @@ func TestSendTimeout(t *testing.T) {
 
 	<-r
 }
-
 
 // TestSpawnSSHPTY tests the SSHPTY spawner.
 func TestSpawnSSHPTY(t *testing.T) {
@@ -1149,11 +1148,11 @@ Router42>`},
 			t.Errorf("%s: Expect(%q,%v) = %t want: %t , err: %v, out: %q", tst.name, tst.re.String(), tst.timeout, got, want, err, out)
 			continue
 		}
-        out, _, err = exp.Expect(tst.re2, tst.timeout)
-        if got, want := err != nil, tst.fail; got != want {
-            t.Errorf("%s: Expect(%q,%v) = %t want: %t , err: %v, out: %q", tst.name, tst.re.String(), tst.timeout, got, want, err, out)
-            continue
-        }
+		out, _, err = exp.Expect(tst.re2, tst.timeout)
+		if got, want := err != nil, tst.fail; got != want {
+			t.Errorf("%s: Expect(%q,%v) = %t want: %t , err: %v, out: %q", tst.name, tst.re.String(), tst.timeout, got, want, err, out)
+			continue
+		}
 	}
 }
 
@@ -1226,7 +1225,6 @@ L1:
 
 // TestBatchScenarios runs through the scenarios again , this time as Batchjobs.
 func TestBatchScenarios(t *testing.T) {
-	//path := runfiles.Path(expTestData)
 	files, err := filepath.Glob(expTestData + "/*.sh")
 	if err != nil || len(files) == 0 {
 		t.Fatalf("filepath.Glob(%q) failed: %v, not testfile found", expTestData+"/*.sh", err)
@@ -1264,6 +1262,89 @@ func TestBatchScenarios(t *testing.T) {
 	}
 }
 
+var signalsInstalled = regexp.MustCompile("Waiting for signal")
+
+func TestSendSignal(t *testing.T) {
+	tests := []struct {
+		name   string
+		fail   bool
+		cmd    string
+		sig    os.Signal
+		expect string
+	}{{
+		name:   "Sig USR1",
+		cmd:    "testdata/traptest.sh",
+		sig:    syscall.SIGUSR1,
+		expect: "USR1",
+	}, {
+		name:   "Sig HUP",
+		cmd:    "testdata/traptest.sh",
+		sig:    syscall.SIGHUP,
+		expect: "HUP",
+	}}
+
+	for _, tst := range tests {
+		t.Run(tst.name, func(t *testing.T) {
+			exp, r, err := Spawn(tst.cmd, 30*time.Second, Verbose(true))
+			if got, want := (err != nil), tst.fail; got != want {
+				t.Fatalf("%s: Spawn(%q, %v, _) = %t want: %t , err: %v", tst.name, tst.cmd, 30*time.Second, got, want, err)
+			}
+			defer func() {
+				exp.Close()
+				<-r
+			}()
+			if match, buf, err := exp.Expect(signalsInstalled, time.Second*10); err != nil {
+				t.Fatalf("%s: exp.Expect(%q, %v) failed: %v, match: %s, buf: %s", tst.name, tst.expect, time.Second*10, err, match, buf)
+			}
+			if err := exp.SendSignal(tst.sig); err != nil {
+				t.Fatalf("%s: exp.SendSignal(%v) failed: %v", tst.name, tst.sig, err)
+			}
+
+			reExpect, err := regexp.Compile(tst.expect)
+			if err != nil {
+				t.Fatalf("%s: regexp.Compile(%q) failed: %v", tst.name, tst.expect, err)
+			}
+
+			if match, buf, err := exp.Expect(reExpect, time.Second*2); err != nil {
+				t.Fatalf("%s: exp.Expect(%q, %v) failed: %v, match: %s, buf: %s", tst.name, tst.expect, time.Second*2, err, match, buf)
+			}
+		})
+	}
+}
+
+// ExampleGExpect_SendSignal shows the usage of the SendSignal call.
+func ExampleGExpect_SendSignal() {
+	exp, r, err := Spawn("testdata/traptest.sh", 30*time.Second)
+	if err != nil {
+		fmt.Printf("Spawn failed: %v\n", err)
+		return
+	}
+	if match, buf, err := exp.Expect(signalsInstalled, time.Second*20); err != nil {
+		fmt.Printf("exp.Expect failed, match: %v, buf: %v, err: %v", match, buf, err)
+		return
+	}
+
+	if err := exp.SendSignal(syscall.SIGUSR1); err != nil {
+		fmt.Printf("exp.SendSignal failed: %v", err)
+		return
+	}
+
+	reExpect, err := regexp.Compile("USR1")
+	if err != nil {
+		fmt.Printf("regexp.Compile(%q) failed: %v", "Sig USR1", err)
+		return
+	}
+
+	match, buf, err := exp.Expect(reExpect, time.Second*20)
+	if err != nil {
+		fmt.Printf("exp.Expect failed, match: %v, buf: %v, err: %v", match, buf, err)
+		return
+	}
+	fmt.Println(match)
+	<-r
+	// Output: Got the USR1 Signal
+}
+
 var tMap map[string][]Batcher
 
 // buildTest Reads the sends and expected outputs from the testfiles eg.
@@ -1274,7 +1355,6 @@ func buildTest(fstring string) ([]Batcher, error) {
 	if tst, ok := tMap[fstring]; ok {
 		return tst, nil
 	}
-	//path := runfiles.Path(expTestData)
 	f, err := os.Open(expTestData + "/" + fstring)
 	if err != nil {
 		return []Batcher{}, err

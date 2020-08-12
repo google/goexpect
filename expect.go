@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"os"
 	"os/exec"
 	"regexp"
 	"strconv"
@@ -21,6 +22,7 @@ import (
 
 	"golang.org/x/crypto/ssh"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"github.com/google/goterm/term"
 )
@@ -168,8 +170,8 @@ func SetEnv(env []string) Option {
 	}
 }
 
-// SetSysProcAttr sets the SysProcAttr syscall values for the spawned process. 
-// Because this modifies cmd, it will only work with the process spawners 
+// SetSysProcAttr sets the SysProcAttr syscall values for the spawned process.
+// Because this modifies cmd, it will only work with the process spawners
 // and not effect the GExpect option method.
 func SetSysProcAttr(args *syscall.SysProcAttr) Option {
 	return func(e *GExpect) Option {
@@ -640,6 +642,15 @@ func (e *GExpect) check() bool {
 	return e.chk(e)
 }
 
+// SendSignal sends a signal to the Expect controlled process.
+// Only works on Process Expecters.
+func (e *GExpect) SendSignal(sig os.Signal) error {
+	if e.cmd == nil {
+		return status.Errorf(codes.Unimplemented, "only process Expecters supported")
+	}
+	return e.cmd.Process.Signal(sig)
+}
+
 // ExpectSwitchCase checks each Case against the accumulated out buffer, sending specified
 // string back. Leaving Send empty will Send nothing to the process.
 // Substring expansion can be used eg.
@@ -732,7 +743,7 @@ func (e *GExpect) ExpectSwitchCase(cs []Caser, timeout time.Duration) (string, [
 				matchIndex := rs[i].FindStringIndex(tbufString)
 				o = tbufString[0:matchIndex[1]]
 				e.returnUnmatchedSuffix(tbufString[matchIndex[1]:])
-			} 
+			}
 
 			tbuf.Reset()
 
@@ -800,7 +811,7 @@ func (e *GExpect) ExpectSwitchCase(cs []Caser, timeout time.Duration) (string, [
 		case <-e.rcv:
 			// Data to fetch.
 			nr, err := io.Copy(&tbuf, e)
-		    	if err != nil {
+			if err != nil {
 				return tbuf.String(), nil, -1, fmt.Errorf("io.Copy failed: %v", err)
 			}
 			// timer shoud be reset when new output is available.
@@ -1132,11 +1143,11 @@ func (e *GExpect) Read(p []byte) (nr int, err error) {
 }
 
 func (e *GExpect) returnUnmatchedSuffix(p string) {
-    e.mu.Lock()
-    defer e.mu.Unlock()
-    newBuffer := bytes.NewBufferString(p)
-    newBuffer.WriteString(e.out.String())
-    e.out = *newBuffer
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	newBuffer := bytes.NewBufferString(p)
+	newBuffer.WriteString(e.out.String())
+	e.out = *newBuffer
 }
 
 // Send sends a string to spawned process.
