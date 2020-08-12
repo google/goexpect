@@ -1329,7 +1329,7 @@ func ExampleGExpect_SendSignal() {
 		return
 	}
 
-	reExpect, err := regexp.Compile("Sig USR1")
+	reExpect, err := regexp.Compile("USR1")
 	if err != nil {
 		fmt.Printf("regexp.Compile(%q) failed: %v", "Sig USR1", err)
 		return
@@ -1342,7 +1342,7 @@ func ExampleGExpect_SendSignal() {
 	}
 	fmt.Println(match)
 	<-r
-	// Output: Sig USR1
+	// Output: Got the USR1 Signal
 }
 
 var tMap map[string][]Batcher

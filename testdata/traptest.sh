@@ -1,13 +1,16 @@
 #!/bin/bash
-FIFOFILE=~/fifo
+FIFOFILE=$(mktemp -u)
 trap 'rm -f $FIFOFILE; echo "Got the INTR Signal"' INT
 trap 'rm -f $FIFOFILE; echo "Got the QUIT Signal"' QUIT
 trap 'rm -f $FIFOFILE; echo "Got the USR1 Signal"' USR1
 trap 'rm -f $FIFOFILE; echo "Got the HUP Signal"' HUP
 
-[[ -f "$FIFOFILE" ]] && rm -f $FIFOFILE
+if [[ -p $FIFOFILE ]]
+then
+  rm -f $FIFOFILE
+fi
 
-mkfifo -m 0400 $FIFOFILE || exit
+mkfifo -m 0400 $FIFOFILE
 echo "Waiting for signal"
-cat < $FIFOFILE || echo ""
+true < $FIFOFILE
 sleep 10
