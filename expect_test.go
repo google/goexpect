@@ -1345,6 +1345,26 @@ func ExampleGExpect_SendSignal() {
 	// Output: Got the USR1 Signal
 }
 
+// ExampleGExpect_SendSignal_Batch is an example of using SendSignal in a batch.
+func ExampleGExpect_SendSignal_Batch() {
+	exp, r, err := Spawn("testdata/traptest.sh", 30*time.Second)
+	if err != nil {
+		fmt.Printf("Spawn failed: %v\n", err)
+		return
+	}
+	if _, err := exp.ExpectBatch([]Batcher{
+		&BExp{`Waiting for signal`},
+		&BSig{syscall.SIGUSR1},
+		&BExp{`USR1`},
+	}, time.Second*20); err != nil {
+		fmt.Printf("ExpectBatch failed: %v\n", err)
+		return
+	}
+	fmt.Println("Signal received")
+	<-r
+	// Output: Signal received
+}
+
 var tMap map[string][]Batcher
 
 // buildTest Reads the sends and expected outputs from the testfiles eg.
