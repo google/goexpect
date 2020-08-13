@@ -23,6 +23,9 @@ common_modules: &common_modules
     - run:
         name: Go version
         command: go version
+    - run:
+        name: Run unit tests
+        command: go test -v ./...
 
 
 #
