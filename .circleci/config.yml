@@ -20,6 +20,10 @@ common_modules: &common_modules
   # This conforms to Go workspace requirements (we are pre-modules).
   steps:
     - checkout
+    - run:
+        name: Go version
+        command: go version
+
 
 #
 # CircleCI.
