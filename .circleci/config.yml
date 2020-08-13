@@ -51,6 +51,10 @@ jobs:
     docker:
       - image: circleci/golang:1.12
     <<: *common_modules
+  go-latest_modules:
+    docker:
+      - image: circleci/golang:latest
+    <<: *common_modules
 
 workflows:
   version: 2
@@ -63,3 +67,4 @@ workflows:
       - go-1.11_modules
       - go-1.12_modules
       - go-1.14_modules
+      - go-latest_modules
