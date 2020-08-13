@@ -16,6 +16,11 @@ common: &common
         name: Run unit tests
         command: go test -v ./...
 
+common_modules: &common_modules
+  # This conforms to Go workspace requirements (we are pre-modules).
+  steps:
+    - checkout
+
 #
 # CircleCI.
 #
@@ -30,6 +35,22 @@ jobs:
     docker:
       - image: circleci/golang:1.12
     <<: *common
+  go-1.14:
+    docker:
+      - image: circleci/golang:1.14
+    <<: *common
+  go-1.11_modules:
+    docker:
+      - image: circleci/golang:1.11
+    <<: *common_modules
+  go-1.12_modules:
+    docker:
+      - image: circleci/golang:1.12
+    <<: *common_modules
+  go-1.14_modules:
+    docker:
+      - image: circleci/golang:1.12
+    <<: *common_modules
 
 workflows:
   version: 2
@@ -38,3 +59,7 @@ workflows:
     jobs:
       - go-1.11
       - go-1.12
+      - go-1.14
+      - go-1.11_modules
+      - go-1.12_modules
+      - go-1.14_modules
