@@ -17,7 +17,6 @@ common: &common
         command: go test -v ./...
 
 common_modules: &common_modules
-  # This conforms to Go workspace requirements (we are pre-modules).
   steps:
     - checkout
     - run:
