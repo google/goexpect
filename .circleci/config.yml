@@ -56,7 +56,7 @@ jobs:
     <<: *common_modules
   go-1.14_modules:
     docker:
-      - image: circleci/golang:1.12
+      - image: circleci/golang:1.14
     <<: *common_modules
   go-latest_modules:
     docker:
