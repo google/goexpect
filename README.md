@@ -52,6 +52,9 @@ The ChangeCheck option makes it possible to replace the Spawner Check function w
 
 The SendTimeout set timeout on the `Send` command, without timeout the `Send` command will wait forewer for the expecter process.
 
+### BufferSize
+
+The BufferSize option provides a mechanism to configure the client io buffer size in bytes.
 
 ## Basic Examples
 
