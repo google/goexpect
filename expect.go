@@ -31,8 +31,8 @@ import (
 const DefaultTimeout = 60 * time.Second
 
 const (
-	bufferSize    = 8192            // bufferSize sets the size of the io buffers.
 	checkDuration = 2 * time.Second // checkDuration how often to check for new output.
+	defaultBufferSize = 8192        // defaultBufferSize is the default io buffer size.
 )
 
 // Status contains an errormessage and a status code.
@@ -187,6 +187,16 @@ func PartialMatch(v bool) Option {
 		prev := e.partialMatch
 		e.partialMatch = v
 		return PartialMatch(prev)
+	}
+}
+
+// BufferSize sets the size of receive buffer in bytes.
+func BufferSize(bufferSize int) Option {
+	return func(e *GExpect) Option {
+		e.bufferSizeIsSet = true
+		prev := e.bufferSize
+		e.bufferSize = bufferSize
+		return BufferSize(prev)
 	}
 }
 
@@ -600,6 +610,10 @@ type GExpect struct {
 	teeWriter io.WriteCloser
 	// PartialMatch enables the returning of unmatched buffer so that consecutive expect call works.
 	partialMatch bool
+	// bufferSize is the size of the io buffers in bytes.
+	bufferSize int
+	// bufferSizeIsSet tracks whether the bufferSize was set for a given GExpect instance.
+	bufferSizeIsSet bool
 
 	// mu protects the output buffer. It must be held for any operations on out.
 	mu  sync.Mutex
@@ -904,9 +918,16 @@ func SpawnGeneric(opt *GenOptions, timeout time.Duration, opts ...Option) (*GExp
 			return opt.Check()
 		},
 	}
+
 	for _, o := range opts {
 		o(e)
 	}
+
+	// Set the buffer size to the default if expect.BufferSize(...) is not utilized.
+	if !e.bufferSizeIsSet {
+		e.bufferSize = defaultBufferSize
+	}
+
 	errCh := make(chan error, 1)
 	go e.waitForSession(errCh, opt.Wait, opt.In, opt.Out, nil)
 	return e, errCh, nil
@@ -1006,6 +1027,11 @@ func SpawnWithArgs(command []string, timeout time.Duration, opts ...Option) (*GE
 		o(e)
 	}
 
+	// Set the buffer size to the default if expect.BufferSize(...) is not utilized.
+	if !e.bufferSizeIsSet {
+		e.bufferSize = defaultBufferSize
+	}
+
 	res := make(chan error, 1)
 	go e.runcmd(res)
 	// Wait until command started
@@ -1070,6 +1096,12 @@ func SpawnSSHPTY(sshClient *ssh.Client, timeout time.Duration, term term.Termios
 	for _, o := range opts {
 		o(e)
 	}
+
+	// Set the buffer size to the default if expect.BufferSize(...) is not utilized.
+	if !e.bufferSizeIsSet {
+		e.bufferSize = defaultBufferSize
+	}
+
 	if term.Wz.WsCol == 0 {
 		term.Wz.WsCol = sshTermWidth
 	}
@@ -1124,7 +1156,7 @@ func (e *GExpect) waitForSession(r chan error, wait func() error, sIn io.WriteCl
 	}()
 	rdr := func(out io.Reader) {
 		defer wg.Done()
-		buf := make([]byte, bufferSize)
+		buf := make([]byte, e.bufferSize)
 		for {
 			nr, err := out.Read(buf)
 			if err != nil || !e.check() {
@@ -1270,7 +1302,7 @@ func (e *GExpect) Options(opts ...Option) (prev Option) {
 // read reads from the PTY master and forwards to active Expect function.
 func (e *GExpect) read(done chan struct{}, ptySync *sync.WaitGroup) {
 	defer ptySync.Done()
-	buf := make([]byte, bufferSize)
+	buf := make([]byte, e.bufferSize)
 	for {
 		nr, err := e.pty.Master.Read(buf)
 		if err != nil && !e.check() {
