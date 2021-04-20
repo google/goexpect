@@ -247,7 +247,7 @@ type BatchRes struct {
 //	&BExp{`prompt/>`},
 // }
 type Batcher interface {
-	// cmd returns the Batch command.
+	// Cmd returns the Batch command.
 	Cmd() int
 	// Arg returns the command argument.
 	Arg() string
@@ -475,7 +475,7 @@ func LogContinue(msg string, s *Status) func() (Tag, *Status) {
 type Caser interface {
 	// RE returns a compiled regexp
 	RE() (*regexp.Regexp, error)
-	// Send returns the send string
+	// String returns the send string
 	String() string
 	// Tag returns the Tag.
 	Tag() (Tag, *Status)
@@ -515,7 +515,7 @@ func (c *Case) Retry() bool {
 	return c.Rt > 0
 }
 
-// Send returns the string to send if regexp matches
+// String returns the string to send if regexp matches
 func (c *Case) String() string {
 	return c.S
 }
@@ -541,7 +541,7 @@ func (b *BCase) RE() (*regexp.Regexp, error) {
 	return regexp.Compile(b.R)
 }
 
-// Send returns the string to send.
+// String returns the string to send.
 func (b *BCase) String() string {
 	return b.S
 }
@@ -704,7 +704,7 @@ func (e *GExpect) SendSignal(sig os.Signal) error {
 // ExpectSwitchCase checks each Case against the accumulated out buffer, sending specified
 // string back. Leaving Send empty will Send nothing to the process.
 // Substring expansion can be used eg.
-// 	Case{`vf[0-9]{2}.[a-z]{3}[0-9]{2}\.net).*UP`,`show arp \1`}
+// 	Case{`(vf[0-9]{2}.[a-z]{3}[0-9]{2}\.net).*UP`,`show arp \1`}
 // 	Given: vf11.hnd01.net            UP      35 (4)        34 (4)          CONNECTED         0              0/0
 // 	Would send: show arp vf11.hnd01.net
 func (e *GExpect) ExpectSwitchCase(cs []Caser, timeout time.Duration) (string, []string, int, error) {
