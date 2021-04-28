@@ -1346,7 +1346,6 @@ func (e *GExpect) send(done chan struct{}, ptySync *sync.WaitGroup) {
 			}
 			if _, err := e.pty.Master.Write([]byte(sstr)); err != nil || !e.check() {
 				log.Printf("send failed: %v", err)
-				break
 			}
 		}
 	}
