@@ -31,8 +31,8 @@ import (
 const DefaultTimeout = 60 * time.Second
 
 const (
-	checkDuration = 2 * time.Second // checkDuration how often to check for new output.
-	defaultBufferSize = 8192        // defaultBufferSize is the default io buffer size.
+	checkDuration     = 2 * time.Second // checkDuration how often to check for new output.
+	defaultBufferSize = 8192            // defaultBufferSize is the default io buffer size.
 )
 
 // Status contains an errormessage and a status code.
