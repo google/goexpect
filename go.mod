@@ -1,4 +1,4 @@
-module github.com/hamadise/goexpect
+module github.com/google/goexpect
 
 go 1.12
 

@@ -50,7 +50,7 @@ The ChangeCheck option makes it possible to replace the Spawner Check function w
 
 ### SendTimeout
 
-The SendTimeout set timeout on the `Send` command, without timeout the `Send` command will wait forewer for the expecter process.
+The SendTimeout set timeout on the `Send` command, without timeout the `Send` command will wait forever for the expecter process.
 
 ### BufferSize
 
