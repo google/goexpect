@@ -655,7 +655,7 @@ func (e *GExpect) ExpectBatch(batch []Batcher, timeout time.Duration) ([]BatchRe
 				to = timeout
 			}
 			out, match, err := e.Expect(re, to)
-			res = append(res, BatchRes{i, out, match})
+			res = append(res, BatchRes{i, 0, out, match})
 			if err != nil {
 				return res, err
 			}
