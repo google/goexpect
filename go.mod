@@ -1,4 +1,4 @@
-module github.com/jun-rh/goexpect
+module github.com/test-network-function/goexpect
 
 go 1.12
 
