@@ -224,6 +224,8 @@ func (t TimeoutError) Error() string {
 type BatchRes struct {
 	// Idx is used to match the result with the []Batcher commands sent in.
 	Idx int
+	// CaseIdx indicates which case in the batcher matched
+	CaseIdx int
 	// Out output buffer for the expect command at Batcher[Idx].
 	Output string
 	// Match regexp matches for expect command at Batcher[Idx].
@@ -653,7 +655,7 @@ func (e *GExpect) ExpectBatch(batch []Batcher, timeout time.Duration) ([]BatchRe
 				to = timeout
 			}
 			out, match, err := e.Expect(re, to)
-			res = append(res, BatchRes{i, out, match})
+			res = append(res, BatchRes{i, 0, out, match})
 			if err != nil {
 				return res, err
 			}
@@ -666,8 +668,8 @@ func (e *GExpect) ExpectBatch(batch []Batcher, timeout time.Duration) ([]BatchRe
 			if to < 0 {
 				to = timeout
 			}
-			out, match, _, err := e.ExpectSwitchCase(b.Cases(), to)
-			res = append(res, BatchRes{i, out, match})
+			out, match, caseIdx, err := e.ExpectSwitchCase(b.Cases(), to)
+			res = append(res, BatchRes{i, caseIdx, out, match})
 			if err != nil {
 				return res, err
 			}
